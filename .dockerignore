@@ -1,0 +1,27 @@
+# Installed in-image; never copy host modules (wrong arch / stale).
+node_modules
+**/node_modules
+
+# Built artifacts (rebuilt in the image).
+**/dist
+**/build
+
+# Local data: SQLite DB + uploaded blobs.
+data
+**/data
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# VCS / env / misc
+.git
+.gitignore
+*.log
+.env
+.env.*
+.DS_Store
+.vscode
+.idea
+Dockerfile
+.dockerignore
+docker-compose.yml

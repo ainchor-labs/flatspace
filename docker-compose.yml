@@ -1,0 +1,31 @@
+services:
+  flatspace:
+    build: .
+    image: flatspace:latest
+    container_name: flatspace
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      # IMPORTANT: set a long, random secret before exposing this on a network.
+      # Without it the server falls back to a public, insecure dev secret.
+      # Put FLATSPACE_JWT_SECRET=... in a local .env file (see .env.example).
+      FLATSPACE_JWT_SECRET: ${FLATSPACE_JWT_SECRET:-flatspace-dev-secret-change-me}
+      # Optional: max upload size in bytes (default 1 GiB).
+      # FLATSPACE_MAX_UPLOAD: "1073741824"
+    volumes:
+      # Persists the SQLite database and uploaded files across restarts.
+      - flatspace-data:/data
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  flatspace-data:
