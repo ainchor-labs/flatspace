@@ -1,0 +1,31 @@
+{
+  "name": "@flatspace/flatdeck",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./server": "./server/index.ts",
+    "./client": "./client/index.ts",
+    "./editor": "./client/editor.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@flatspace/shared": "workspace:*",
+    "lucide-react": "^0.469.0",
+    "markdown-it": "^14.2.0"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.62.0",
+    "fastify": "^5.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5"
+  }
+}

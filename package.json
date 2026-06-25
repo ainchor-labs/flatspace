@@ -1,0 +1,27 @@
+{
+  "name": "flatspace-suite",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Flatspace Suite — self-hosted productivity suite (Flatfile + Flatdeck)",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "concurrently -n server,web -c magenta,cyan \"pnpm dev:server\" \"pnpm dev:web\"",
+    "dev:server": "pnpm --filter @flatspace/server dev",
+    "dev:web": "pnpm --filter @flatspace/web dev",
+    "build": "pnpm --filter @flatspace/web build",
+    "migrate": "pnpm --filter @flatspace/server migrate",
+    "typecheck": "pnpm -r typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,css,json,md}\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["better-sqlite3", "esbuild"]
+  }
+}

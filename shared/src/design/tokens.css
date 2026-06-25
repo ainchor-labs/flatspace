@@ -1,0 +1,99 @@
+/*
+ * Flatspace design tokens (shadcn/ui HSL variable convention).
+ *
+ * Dark is the default (on :root). The `.light` class flips the palette for the
+ * Flatdeck "Light" theme + export stylesheets. Values mirror the suite spec:
+ * near-black backgrounds (#0f0f0f / #1a1a1a), muted #2a2a2a borders, indigo
+ * #6366f1 accent, zinc-100 text.
+ */
+
+:root {
+  /* near-black background #0f0f0f */
+  --background: 0 0% 6%;
+  /* zinc-100 text #f4f4f5 */
+  --foreground: 240 5% 96%;
+
+  /* surface #1a1a1a */
+  --card: 0 0% 10%;
+  --card-foreground: 240 5% 96%;
+  --popover: 0 0% 10%;
+  --popover-foreground: 240 5% 96%;
+
+  /* indigo accent #6366f1 */
+  --primary: 239 84% 67%;
+  --primary-foreground: 0 0% 100%;
+
+  /* zinc-800 #27272a */
+  --secondary: 240 4% 16%;
+  --secondary-foreground: 240 5% 96%;
+
+  --muted: 240 4% 16%;
+  /* zinc-400 #a1a1aa */
+  --muted-foreground: 240 5% 65%;
+
+  --accent: 240 4% 16%;
+  --accent-foreground: 240 5% 96%;
+
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* muted border #2a2a2a */
+  --border: 0 0% 16%;
+  --input: 0 0% 16%;
+  --ring: 239 84% 67%;
+
+  --radius: 0.625rem;
+
+  color-scheme: dark;
+}
+
+.light {
+  --background: 0 0% 100%;
+  --foreground: 240 10% 4%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 4%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 4%;
+  --primary: 239 84% 67%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 5% 96%;
+  --secondary-foreground: 240 6% 10%;
+  --muted: 240 5% 96%;
+  --muted-foreground: 240 4% 46%;
+  --accent: 240 5% 96%;
+  --accent-foreground: 240 6% 10%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 240 6% 90%;
+  --input: 240 6% 90%;
+  --ring: 239 84% 67%;
+  color-scheme: light;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Sleek, thin scrollbars that match the dark chrome. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--border));
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}

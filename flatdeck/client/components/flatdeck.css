@@ -1,0 +1,190 @@
+/**
+ * Flatdeck slide styling.
+ *
+ * A .deck-slide is a self-contained 16:9 surface. Typography is sized in
+ * container-query units (cqw/cqh) so the *same* SlideView renders correctly at
+ * any size — editor preview, navigator thumbnail, present mode, and print —
+ * without any JS scaling. Theme + layout are plain classes set by SlideView.
+ */
+
+.deck-slide {
+  container-type: size;
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  overflow: hidden;
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+}
+
+.deck-slide-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4cqh;
+  padding: 7cqh 7cqw;
+  overflow: hidden;
+  font-size: 3.4cqw;
+  line-height: 1.35;
+}
+
+.deck-slide-content > :first-child {
+  margin-top: 0;
+}
+.deck-slide-content h1 {
+  font-size: 7cqw;
+  font-weight: 700;
+  line-height: 1.1;
+  margin: 0;
+}
+.deck-slide-content h2 {
+  font-size: 5cqw;
+  font-weight: 700;
+  margin: 0;
+}
+.deck-slide-content h3 {
+  font-size: 4.2cqw;
+  font-weight: 600;
+  margin: 0;
+}
+.deck-slide-content p {
+  margin: 0;
+}
+.deck-slide-content ul,
+.deck-slide-content ol {
+  margin: 0;
+  padding-left: 4.5cqw;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9cqh;
+}
+.deck-slide-content li > ul,
+.deck-slide-content li > ol {
+  margin-top: 0.9cqh;
+}
+.deck-slide-content a {
+  color: var(--deck-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.deck-slide-content strong {
+  color: var(--deck-strong, inherit);
+}
+.deck-slide-content img {
+  max-width: 100%;
+  max-height: 58cqh;
+  object-fit: contain;
+  border-radius: 1.2cqw;
+  align-self: center;
+}
+.deck-slide-content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.88em;
+  background: color-mix(in srgb, var(--deck-fg) 12%, transparent);
+  padding: 0.12em 0.36em;
+  border-radius: 0.3em;
+}
+.deck-slide-content pre {
+  margin: 0;
+  padding: 2cqw;
+  border-radius: 1cqw;
+  background: color-mix(in srgb, var(--deck-fg) 10%, transparent);
+  overflow: hidden;
+  font-size: 2.6cqw;
+}
+.deck-slide-content pre code {
+  background: none;
+  padding: 0;
+}
+.deck-slide-content blockquote {
+  margin: 0;
+  padding-left: 2.5cqw;
+  border-left: 0.7cqw solid var(--deck-accent);
+  opacity: 0.85;
+}
+
+/* ---- Themes -------------------------------------------------------- */
+.deck-theme-dark {
+  --deck-bg: #0e0e12;
+  --deck-fg: #f4f4f5;
+  --deck-accent: #818cf8;
+}
+.deck-theme-light {
+  --deck-bg: #ffffff;
+  --deck-fg: #18181b;
+  --deck-accent: #4f46e5;
+}
+.deck-theme-indigo {
+  --deck-bg: linear-gradient(135deg, #312e81 0%, #4f46e5 60%, #6366f1 100%);
+  --deck-fg: #eef2ff;
+  --deck-accent: #c7d2fe;
+}
+
+/* ---- Layouts ------------------------------------------------------- */
+.slide-layout-title .deck-slide-content,
+.slide-layout-center .deck-slide-content {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.slide-layout-title .deck-slide-content h1 {
+  font-size: 9cqw;
+}
+.slide-layout-section .deck-slide-content {
+  justify-content: center;
+  padding-left: 11cqw;
+}
+.slide-layout-section .deck-slide-content h1,
+.slide-layout-section .deck-slide-content h2 {
+  color: var(--deck-accent);
+}
+.slide-layout-section::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2.6cqw;
+  background: var(--deck-accent);
+}
+
+/* ---- Print (deck PDF export) -------------------------------------- */
+@media print {
+  @page {
+    size: landscape;
+    margin: 0;
+  }
+  body * {
+    visibility: hidden !important;
+  }
+  .deck-print-root,
+  .deck-print-root * {
+    visibility: visible !important;
+  }
+  .deck-print-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .deck-print-page {
+    break-after: page;
+    width: 100%;
+  }
+  .deck-print-page:last-child {
+    break-after: auto;
+  }
+}
+
+/* Presenter slide transitions (applied to the keyed slide wrapper). */
+@keyframes deck-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes deck-slide-in {
+  from { opacity: 0; transform: translateX(4%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.deck-anim-fade { animation: deck-fade-in 0.3s ease; }
+.deck-anim-slide { animation: deck-slide-in 0.35s ease; }
