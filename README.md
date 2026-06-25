@@ -28,7 +28,7 @@ web/       Vite SPA host — shared shell + app dashboards + routing
 ```bash
 pnpm install          # install everything
 pnpm migrate          # create the SQLite schema
-pnpm dev              # Fastify (:3001) + Vite (:5173) together
+pnpm dev              # Fastify (:7532) + Vite (:5173) together
 ```
 
 Open http://localhost:5173 and register — **the first account becomes admin**.
@@ -41,14 +41,14 @@ pnpm --filter @flatspace/server seed   # optional: sample docs/folders for the f
 
 ```bash
 pnpm build            # build the web SPA → web/dist
-pnpm dev:server       # Fastify serves web/dist + the API on :3001
+pnpm dev:server       # Fastify serves web/dist + the API on :7532
 ```
 
 ## Environment
 
 | Variable                | Default                | Purpose                          |
 | ----------------------- | ---------------------- | -------------------------------- |
-| `PORT`                  | `3001`                 | Fastify port                     |
+| `PORT`                  | `7532`                 | Fastify port                     |
 | `HOST`                  | `0.0.0.0`              | Bind address (LAN multi-user)    |
 | `FLATSPACE_DB_PATH`     | `./data/flatspace.sqlite` | SQLite file location          |
 | `FLATSPACE_JWT_SECRET`  | dev fallback (warns)   | **Set this before LAN exposure** |

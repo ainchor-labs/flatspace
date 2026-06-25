@@ -5,7 +5,7 @@ services:
     container_name: flatspace
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "7532:7532"
     environment:
       # IMPORTANT: set a long, random secret before exposing this on a network.
       # Without it the server falls back to a public, insecure dev secret.
@@ -21,7 +21,7 @@ services:
         - CMD
         - node
         - -e
-        - "fetch('http://localhost:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        - "fetch('http://localhost:7532/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
       interval: 30s
       timeout: 5s
       retries: 3

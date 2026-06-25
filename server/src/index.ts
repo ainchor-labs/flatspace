@@ -26,7 +26,7 @@ import { flatdriveRoutes } from "@flatspace/flatdrive/server";
 import { adminRoutes } from "./admin-routes.ts";
 import { runStartupChecks } from "./startup-checks.ts";
 
-const PORT = Number(process.env.PORT ?? 3001);
+const PORT = Number(process.env.PORT ?? 7532);
 const HOST = process.env.HOST ?? "0.0.0.0"; // bind to LAN for multi-user access
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

@@ -44,7 +44,7 @@ RUN apt-get update \
 
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
-    PORT=3001 \
+    PORT=7532 \
     FLATSPACE_DB_PATH=/data/flatspace.sqlite \
     FLATSPACE_UPLOADS_PATH=/data/uploads
 
@@ -55,7 +55,7 @@ COPY --from=builder /app /app
 RUN mkdir -p /data
 VOLUME ["/data"]
 
-EXPOSE 3001
+EXPOSE 7532
 WORKDIR /app/server
 ENTRYPOINT ["tini", "--"]
 CMD ["pnpm", "start"]
