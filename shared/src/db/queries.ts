@@ -15,6 +15,9 @@ import type {
   DriveFolder,
   FileItem,
   Folder,
+  Tag,
+  TagEntityType,
+  TagWithCount,
   Thought,
   User,
   UserRole,
@@ -118,6 +121,7 @@ function toDocument(r: DocumentRecord): Document {
     app: r.app,
     starred: r.starred === 1,
     settings: parseSettings(r.settings),
+    tags: [],
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -263,7 +267,7 @@ export const documents = {
     const row = db.prepare("SELECT * FROM documents WHERE id = ?").get(id) as
       | DocumentRecord
       | undefined;
-    return row ? toDocument(row) : null;
+    return row ? fillTag("document", toDocument(row), db) : null;
   },
 
   listForUser(
@@ -289,7 +293,7 @@ export const documents = {
         `SELECT * FROM documents WHERE ${clauses.join(" AND ")} ORDER BY updated_at DESC`,
       )
       .all(...params) as DocumentRecord[];
-    return rows.map(toDocument).map(toSummary);
+    return fillTags("document", rows.map(toDocument).map(toSummary), db);
   },
 
   recent(ownerId: number, app: AppId, limit = 8, db: DB = getDb()): DocumentSummary[] {
@@ -298,7 +302,7 @@ export const documents = {
         "SELECT * FROM documents WHERE owner_id = ? AND app = ? ORDER BY updated_at DESC LIMIT ?",
       )
       .all(ownerId, app, limit) as DocumentRecord[];
-    return rows.map(toDocument).map(toSummary);
+    return fillTags("document", rows.map(toDocument).map(toSummary), db);
   },
 
   /** Full-text-ish search across title + content for one app. */
@@ -311,7 +315,7 @@ export const documents = {
          ORDER BY updated_at DESC`,
       )
       .all(ownerId, app, like, like) as DocumentRecord[];
-    return rows.map(toDocument).map(toSummary);
+    return fillTags("document", rows.map(toDocument).map(toSummary), db);
   },
 
   create(
@@ -459,6 +463,7 @@ function toFileItem(r: FileRecord): FileItem {
     folderId: r.folder_id,
     mime: r.mime,
     size: r.size,
+    tags: [],
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -571,12 +576,12 @@ export const files = {
             .prepare("SELECT * FROM files WHERE owner_id = ? AND folder_id = ? ORDER BY name")
             .all(ownerId, folderId)
     ) as FileRecord[];
-    return rows.map(toFileItem);
+    return fillTags("file", rows.map(toFileItem), db);
   },
 
   get(id: number, db: DB = getDb()): FileItem | null {
     const row = db.prepare("SELECT * FROM files WHERE id = ?").get(id) as FileRecord | undefined;
-    return row ? toFileItem(row) : null;
+    return row ? fillTag("file", toFileItem(row), db) : null;
   },
 
   /** Server-only: storage key + metadata for streaming/deleting the blob. */
@@ -633,7 +638,7 @@ export const files = {
     const rows = db
       .prepare("SELECT * FROM files WHERE owner_id = ? AND name LIKE ? ORDER BY updated_at DESC")
       .all(ownerId, `%${term}%`) as FileRecord[];
-    return rows.map(toFileItem);
+    return fillTags("file", rows.map(toFileItem), db);
   },
 
   /** Every file owned by a user — for blob cleanup before deleting the account. */
@@ -695,6 +700,7 @@ function toThought(r: ThoughtRecord): Thought {
     content: r.content,
     ownerId: r.owner_id,
     reviewedAt: r.reviewed_at,
+    tags: [],
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -705,7 +711,7 @@ export const thoughts = {
     const row = db.prepare("SELECT * FROM thoughts WHERE id = ?").get(id) as
       | ThoughtRecord
       | undefined;
-    return row ? toThought(row) : null;
+    return row ? fillTag("thought", toThought(row), db) : null;
   },
 
   /** All of a user's thoughts, most-recently-updated first. */
@@ -713,7 +719,7 @@ export const thoughts = {
     const rows = db
       .prepare("SELECT * FROM thoughts WHERE owner_id = ? ORDER BY updated_at DESC")
       .all(ownerId) as ThoughtRecord[];
-    return rows.map(toThought);
+    return fillTags("thought", rows.map(toThought), db);
   },
 
   /**
@@ -727,7 +733,7 @@ export const thoughts = {
          ORDER BY reviewed_at IS NOT NULL, reviewed_at ASC, created_at ASC`,
       )
       .all(ownerId) as ThoughtRecord[];
-    return rows.map(toThought);
+    return fillTags("thought", rows.map(toThought), db);
   },
 
   search(ownerId: number, term: string, db: DB = getDb()): Thought[] {
@@ -739,7 +745,7 @@ export const thoughts = {
          ORDER BY updated_at DESC`,
       )
       .all(ownerId, like, like) as ThoughtRecord[];
-    return rows.map(toThought);
+    return fillTags("thought", rows.map(toThought), db);
   },
 
   create(
@@ -786,5 +792,187 @@ export const thoughts = {
 
   remove(id: number, db: DB = getDb()): void {
     db.prepare("DELETE FROM thoughts WHERE id = ?").run(id);
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/* Tags + taggings (shared, polymorphic labels)                       */
+/* ------------------------------------------------------------------ */
+
+interface TagRecord {
+  id: number;
+  owner_id: number;
+  name: string;
+  color: string;
+  created_at: string;
+}
+
+function toTag(r: TagRecord): Tag {
+  return { id: r.id, ownerId: r.owner_id, name: r.name, color: r.color, createdAt: r.created_at };
+}
+
+/** The physical table backing each polymorphic entity type. */
+const ENTITY_TABLE: Record<TagEntityType, string> = {
+  document: "documents",
+  file: "files",
+  thought: "thoughts",
+};
+
+/** Tags on a single entity, alphabetical. */
+function tagsForEntity(entityType: TagEntityType, entityId: number, db: DB): Tag[] {
+  const rows = db
+    .prepare(
+      `SELECT t.* FROM taggings tg JOIN tags t ON t.id = tg.tag_id
+       WHERE tg.entity_type = ? AND tg.entity_id = ?
+       ORDER BY t.name COLLATE NOCASE`,
+    )
+    .all(entityType, entityId) as TagRecord[];
+  return rows.map(toTag);
+}
+
+/** Tags for many entities of one type, as a Map keyed by entity id (one query). */
+function tagMapFor(entityType: TagEntityType, ids: number[], db: DB): Map<number, Tag[]> {
+  const map = new Map<number, Tag[]>();
+  if (ids.length === 0) return map;
+  const placeholders = ids.map(() => "?").join(", ");
+  const rows = db
+    .prepare(
+      `SELECT tg.entity_id AS eid, t.* FROM taggings tg JOIN tags t ON t.id = tg.tag_id
+       WHERE tg.entity_type = ? AND tg.entity_id IN (${placeholders})
+       ORDER BY t.name COLLATE NOCASE`,
+    )
+    .all(entityType, ...ids) as (TagRecord & { eid: number })[];
+  for (const row of rows) {
+    const list = map.get(row.eid) ?? [];
+    list.push(toTag(row));
+    map.set(row.eid, list);
+  }
+  return map;
+}
+
+/** Fill `.tags` on a single item (returns it for chaining). */
+function fillTag<T extends { id: number; tags: Tag[] } | null>(
+  entityType: TagEntityType,
+  item: T,
+  db: DB,
+): T {
+  if (item) item.tags = tagsForEntity(entityType, item.id, db);
+  return item;
+}
+
+/** Fill `.tags` on a list of items in a single batched query. */
+function fillTags<T extends { id: number; tags: Tag[] }>(
+  entityType: TagEntityType,
+  items: T[],
+  db: DB,
+): T[] {
+  if (items.length === 0) return items;
+  const map = tagMapFor(entityType, items.map((i) => i.id), db);
+  for (const item of items) item.tags = map.get(item.id) ?? [];
+  return items;
+}
+
+export const tags = {
+  get(id: number, db: DB = getDb()): Tag | null {
+    const row = db.prepare("SELECT * FROM tags WHERE id = ?").get(id) as TagRecord | undefined;
+    return row ? toTag(row) : null;
+  },
+
+  /** A user's tags (alphabetical) with how many items currently carry each. */
+  listForUser(ownerId: number, db: DB = getDb()): TagWithCount[] {
+    const rows = db
+      .prepare(
+        `SELECT t.*, COUNT(tg.id) AS count
+         FROM tags t LEFT JOIN taggings tg ON tg.tag_id = t.id
+         WHERE t.owner_id = ?
+         GROUP BY t.id
+         ORDER BY t.name COLLATE NOCASE`,
+      )
+      .all(ownerId) as (TagRecord & { count: number })[];
+    return rows.map((r) => ({ ...toTag(r), count: r.count }));
+  },
+
+  /** Create a tag. Returns the existing one if the name already exists (case-insensitive). */
+  create(input: { ownerId: number; name: string; color: string }, db: DB = getDb()): Tag {
+    const existing = db
+      .prepare("SELECT * FROM tags WHERE owner_id = ? AND name = ? COLLATE NOCASE")
+      .get(input.ownerId, input.name) as TagRecord | undefined;
+    if (existing) return toTag(existing);
+    const info = db
+      .prepare("INSERT INTO tags (owner_id, name, color) VALUES (?, ?, ?)")
+      .run(input.ownerId, input.name, input.color);
+    const created = this.get(Number(info.lastInsertRowid), db);
+    if (!created) throw new Error("Failed to load tag after insert");
+    return created;
+  },
+
+  update(id: number, fields: { name?: string; color?: string }, db: DB = getDb()): Tag | null {
+    const sets: string[] = [];
+    const params: unknown[] = [];
+    if (fields.name !== undefined) {
+      sets.push("name = ?");
+      params.push(fields.name);
+    }
+    if (fields.color !== undefined) {
+      sets.push("color = ?");
+      params.push(fields.color);
+    }
+    if (sets.length > 0) {
+      params.push(id);
+      db.prepare(`UPDATE tags SET ${sets.join(", ")} WHERE id = ?`).run(...params);
+    }
+    return this.get(id, db);
+  },
+
+  /** Delete a tag; ON DELETE CASCADE removes its taggings. */
+  remove(id: number, db: DB = getDb()): void {
+    db.prepare("DELETE FROM tags WHERE id = ?").run(id);
+  },
+};
+
+export const taggings = {
+  forEntity: tagsForEntity,
+
+  /** The owner of a taggable entity (null if it doesn't exist) — for access checks. */
+  entityOwnerId(entityType: TagEntityType, entityId: number, db: DB = getDb()): number | null {
+    const row = db
+      .prepare(`SELECT owner_id FROM ${ENTITY_TABLE[entityType]} WHERE id = ?`)
+      .get(entityId) as { owner_id: number } | undefined;
+    return row ? row.owner_id : null;
+  },
+
+  /**
+   * Replace an entity's full tag set with `tagIds`. Only tags owned by `ownerId`
+   * are attached; unknown/foreign tag ids are ignored. Returns the resulting tags.
+   */
+  setForEntity(
+    entityType: TagEntityType,
+    entityId: number,
+    ownerId: number,
+    tagIds: number[],
+    db: DB = getDb(),
+  ): Tag[] {
+    const existing = (
+      db
+        .prepare("SELECT tag_id FROM taggings WHERE entity_type = ? AND entity_id = ?")
+        .all(entityType, entityId) as { tag_id: number }[]
+    ).map((r) => r.tag_id);
+    const have = new Set(existing);
+    const want = new Set(tagIds);
+
+    const del = db.prepare(
+      "DELETE FROM taggings WHERE entity_type = ? AND entity_id = ? AND tag_id = ?",
+    );
+    for (const id of existing) if (!want.has(id)) del.run(entityType, entityId, id);
+
+    const owns = db.prepare("SELECT 1 FROM tags WHERE id = ? AND owner_id = ?");
+    const ins = db.prepare(
+      "INSERT OR IGNORE INTO taggings (tag_id, entity_type, entity_id, owner_id) VALUES (?, ?, ?, ?)",
+    );
+    for (const id of tagIds) {
+      if (have.has(id)) continue;
+      if (owns.get(id, ownerId)) ins.run(id, entityType, entityId, ownerId);
+    }
+    return tagsForEntity(entityType, entityId, db);
   },
 };

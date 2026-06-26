@@ -4,7 +4,9 @@
  */
 
 import { useCallback, useState } from "react";
+import { Tag as TagIcon } from "lucide-react";
 import type { Thought } from "@flatspace/shared/types";
+import { TagPicker } from "@flatspace/shared/ui";
 import { useThought, type SaveStatus } from "../hooks/useThought.ts";
 import { ThoughtComposer } from "./ThoughtComposer.tsx";
 
@@ -70,6 +72,20 @@ function EditorSurface({
       onContentChange={onContentChange}
       onBack={onBack}
       backLabel="Back to Flatthoughts"
+      headerExtra={
+        <TagPicker
+          entityType="thought"
+          entityId={thought.id}
+          current={thought.tags}
+          align="end"
+          trigger={
+            <span className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5">
+              <TagIcon />
+              {thought.tags.length > 0 ? thought.tags.length : "Tags"}
+            </span>
+          }
+        />
+      }
     />
   );
 }

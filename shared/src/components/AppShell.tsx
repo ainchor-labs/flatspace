@@ -30,6 +30,8 @@ export interface AppShellProps {
   searchValue?: string;
   /** Admin-only: open the user-management screen (shown in the user menu). */
   onManageUsers?: () => void;
+  /** Open the tag-management screen (shown in the user menu). */
+  onManageTags?: () => void;
   /** Open the current user's account settings (shown in the user menu). */
   onSettings?: () => void;
   sidebar?: ReactNode;
@@ -46,6 +48,7 @@ export function AppShell({
   onSubmitSearch,
   searchValue,
   onManageUsers,
+  onManageTags,
   onSettings,
   sidebar,
   children,
@@ -100,6 +103,7 @@ export function AppShell({
             user={user}
             onLogout={onLogout}
             onManageUsers={onManageUsers}
+            onManageTags={onManageTags}
             onSettings={onSettings}
           />
         </div>

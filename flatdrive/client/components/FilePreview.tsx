@@ -14,9 +14,9 @@ import "highlight.js/styles/github-dark.css";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import hljs from "highlight.js/lib/common";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, Tag as TagIcon } from "lucide-react";
 import { api } from "@flatspace/shared/lib";
-import { Button } from "@flatspace/shared/ui";
+import { Button, TagPicker } from "@flatspace/shared/ui";
 import { fileRawUrl, useFile } from "../hooks/useFlatdrive.ts";
 import { codeLanguage, formatBytes, iconFor, previewKind } from "../lib/fileType.ts";
 
@@ -62,6 +62,17 @@ export function FilePreview({ id, onBack }: { id: number; onBack: () => void }) 
         </button>
         <span className="min-w-0 flex-1 truncate text-sm font-medium">{file.name}</span>
         <span className="text-xs text-muted-foreground">{formatBytes(file.size)}</span>
+        <TagPicker
+          entityType="file"
+          entityId={file.id}
+          current={file.tags}
+          align="end"
+          trigger={
+            <span className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5">
+              <TagIcon /> {file.tags.length > 0 ? file.tags.length : "Tags"}
+            </span>
+          }
+        />
         <a href={fileRawUrl(file.id, true)} download={file.name}>
           <Button variant="ghost" size="sm" className="text-muted-foreground">
             <Download /> Download

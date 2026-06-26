@@ -10,8 +10,8 @@
 import { useState } from "react";
 import { FilePlus2, FileText } from "lucide-react";
 import type { DocumentSummary, Folder } from "@flatspace/shared/types";
-import { Button, useDialog, useToast } from "@flatspace/shared/ui";
-import { ApiRequestError } from "@flatspace/shared/lib";
+import { Button, TagFilterBar, useDialog, useToast } from "@flatspace/shared/ui";
+import { ApiRequestError, useTags } from "@flatspace/shared/lib";
 import {
   useCreateDocument,
   useDeleteDocument,
@@ -58,6 +58,7 @@ export function FlatfileDashboard({
   folders?: Folder[];
 }) {
   const query = useViewData(view);
+  const allTags = useTags();
   const createDoc = useCreateDocument();
   const toggleStar = useToggleStar();
   const renameDoc = useRenameDocument();
@@ -67,9 +68,23 @@ export function FlatfileDashboard({
   const { toast } = useToast();
   const { confirm, prompt } = useDialog();
   const [moving, setMoving] = useState<DocumentSummary | null>(null);
+  const [filter, setFilter] = useState<Set<number>>(new Set());
 
   const title = typeof view === "object" ? "Folder" : (TITLES[view] ?? "Documents");
-  const docs = (query.data ?? []) as DocumentSummary[];
+  const all = (query.data ?? []) as DocumentSummary[];
+  const docs =
+    filter.size === 0
+      ? all
+      : all.filter((d) => {
+          const ids = new Set(d.tags.map((t) => t.id));
+          return [...filter].every((id) => ids.has(id));
+        });
+  const toggleFilter = (id: number) =>
+    setFilter((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   async function handleNew() {
     const doc = await createDoc.mutateAsync({});
@@ -139,7 +154,11 @@ export function FlatfileDashboard({
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {query.isLoading ? "Loading…" : `${docs.length} document${docs.length === 1 ? "" : "s"}`}
+            {query.isLoading
+              ? "Loading…"
+              : filter.size > 0
+                ? `${docs.length} of ${all.length} document${all.length === 1 ? "" : "s"}`
+                : `${all.length} document${all.length === 1 ? "" : "s"}`}
           </p>
         </div>
         <Button onClick={handleNew} disabled={createDoc.isPending}>
@@ -147,10 +166,24 @@ export function FlatfileDashboard({
         </Button>
       </div>
 
+      {(allTags.data?.length ?? 0) > 0 && (
+        <TagFilterBar
+          tags={allTags.data!}
+          selected={filter}
+          onToggle={toggleFilter}
+          onClear={() => setFilter(new Set())}
+          className="mb-5"
+        />
+      )}
+
       {query.isLoading ? (
         <SkeletonGrid />
-      ) : docs.length === 0 ? (
+      ) : all.length === 0 ? (
         <EmptyState onNew={handleNew} />
+      ) : docs.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
+          No documents match the selected tag{filter.size === 1 ? "" : "s"}.
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {docs.map((doc) => (

@@ -16,6 +16,8 @@ export {
   driveFolders,
   files,
   thoughts,
+  tags,
+  taggings,
   toPublicUser,
   type FileLocation,
 } from "./queries.ts";

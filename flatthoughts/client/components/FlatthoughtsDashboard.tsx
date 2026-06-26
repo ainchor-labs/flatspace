@@ -6,7 +6,8 @@
  * "Triage" (→ the Tinder-style swipe deck). Clicking a card opens it for editing.
  */
 
-import { Layers, MoreVertical, Plus, StickyNote, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { Layers, MoreVertical, Plus, StickyNote, Tag as TagIcon, Trash2 } from "lucide-react";
 import type { Thought } from "@flatspace/shared/types";
 import {
   Button,
@@ -14,10 +15,13 @@ import {
   MenuContent,
   MenuItem,
   MenuTrigger,
+  TagChips,
+  TagFilterBar,
+  TagPicker,
   useDialog,
   useToast,
 } from "@flatspace/shared/ui";
-import { ApiRequestError } from "@flatspace/shared/lib";
+import { ApiRequestError, useTags } from "@flatspace/shared/lib";
 import { useDeleteThought, useThoughts } from "../hooks/useFlatthoughts.ts";
 import { shortDate, thoughtSnippet, thoughtTitle } from "../lib/thought.ts";
 
@@ -31,10 +35,27 @@ export function FlatthoughtsDashboard({
   onTriage: () => void;
 }) {
   const thoughts = useThoughts();
+  const allTags = useTags();
   const deleteThought = useDeleteThought();
   const { toast } = useToast();
   const { confirm } = useDialog();
-  const items = thoughts.data ?? [];
+  const [filter, setFilter] = useState<Set<number>>(new Set());
+
+  const all = thoughts.data ?? [];
+  // Filter: keep thoughts carrying every selected tag (intersection narrows).
+  const items =
+    filter.size === 0
+      ? all
+      : all.filter((t) => {
+          const ids = new Set(t.tags.map((tag) => tag.id));
+          return [...filter].every((id) => ids.has(id));
+        });
+  const toggleFilter = (id: number) =>
+    setFilter((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   const errMsg = (err: unknown, fallback: string) =>
     err instanceof ApiRequestError ? err.message : fallback;
 
@@ -63,11 +84,13 @@ export function FlatthoughtsDashboard({
           <p className="mt-1 text-sm text-muted-foreground">
             {thoughts.isLoading
               ? "Loading…"
-              : `${items.length} thought${items.length === 1 ? "" : "s"}`}
+              : filter.size > 0
+                ? `${items.length} of ${all.length} thought${all.length === 1 ? "" : "s"}`
+                : `${all.length} thought${all.length === 1 ? "" : "s"}`}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={onTriage} disabled={items.length === 0}>
+          <Button variant="outline" onClick={onTriage} disabled={all.length === 0}>
             <Layers /> Triage
           </Button>
           <Button onClick={onNew}>
@@ -76,13 +99,23 @@ export function FlatthoughtsDashboard({
         </div>
       </div>
 
+      {(allTags.data?.length ?? 0) > 0 && (
+        <TagFilterBar
+          tags={allTags.data!}
+          selected={filter}
+          onToggle={toggleFilter}
+          onClear={() => setFilter(new Set())}
+          className="mb-5"
+        />
+      )}
+
       {thoughts.isLoading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-40 animate-pulse rounded-xl border border-border bg-card" />
           ))}
         </div>
-      ) : items.length === 0 ? (
+      ) : all.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20 text-center">
           <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
             <StickyNote className="size-6" />
@@ -95,6 +128,10 @@ export function FlatthoughtsDashboard({
             <Plus /> New thought
           </Button>
         </div>
+      ) : items.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
+          No thoughts match the selected tag{filter.size === 1 ? "" : "s"}.
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((thought) => {
@@ -106,7 +143,7 @@ export function FlatthoughtsDashboard({
               >
                 <button
                   onClick={() => onOpenThought(thought.id)}
-                  className="flex min-h-40 flex-1 flex-col p-4 text-left"
+                  className="flex min-h-32 flex-1 flex-col p-4 pb-2 text-left"
                 >
                   <div className="line-clamp-2 pr-6 text-sm font-semibold">
                     {thoughtTitle(thought)}
@@ -116,10 +153,26 @@ export function FlatthoughtsDashboard({
                       {snippet}
                     </p>
                   )}
-                  <div className="mt-3 text-xs text-muted-foreground/70">
-                    {shortDate(thought.updatedAt)}
-                  </div>
                 </button>
+                <div className="flex items-center gap-2 px-4 pb-3">
+                  <div className="min-w-0 flex-1">
+                    <TagChips tags={thought.tags} />
+                  </div>
+                  <TagPicker
+                    entityType="thought"
+                    entityId={thought.id}
+                    current={thought.tags}
+                    align="end"
+                    trigger={
+                      <span className="flex items-center rounded-md p-1 text-muted-foreground opacity-0 transition hover:bg-accent hover:text-foreground group-hover:opacity-100 [&_svg]:size-3.5">
+                        <TagIcon />
+                      </span>
+                    }
+                  />
+                  <span className="shrink-0 text-xs text-muted-foreground/70">
+                    {shortDate(thought.updatedAt)}
+                  </span>
+                </div>
                 <Menu className="absolute right-1.5 top-1.5 opacity-0 transition group-hover:opacity-100">
                   <MenuTrigger>
                     <span className="flex size-7 items-center justify-center rounded-md bg-background/80 text-muted-foreground backdrop-blur hover:text-foreground [&_svg]:size-4">

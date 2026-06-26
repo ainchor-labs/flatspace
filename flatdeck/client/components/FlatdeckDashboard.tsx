@@ -6,7 +6,8 @@
  * mode, and PDF export arrive in later Flatdeck milestones.
  */
 
-import { Copy, MoreVertical, Pencil, Plus, Presentation, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { Copy, MoreVertical, Pencil, Plus, Presentation, Tag as TagIcon, Trash2 } from "lucide-react";
 import type { DocumentSummary } from "@flatspace/shared/types";
 import {
   Button,
@@ -15,10 +16,13 @@ import {
   MenuItem,
   MenuSeparator,
   MenuTrigger,
+  TagChips,
+  TagFilterBar,
+  TagPicker,
   useDialog,
   useToast,
 } from "@flatspace/shared/ui";
-import { ApiRequestError } from "@flatspace/shared/lib";
+import { ApiRequestError, useTags } from "@flatspace/shared/lib";
 import {
   useCreateDeck,
   useDecks,
@@ -29,13 +33,29 @@ import {
 
 export function FlatdeckDashboard({ onOpenDeck }: { onOpenDeck: (id: number) => void }) {
   const decks = useDecks();
+  const allTags = useTags();
   const createDeck = useCreateDeck();
   const renameDeck = useRenameDeck();
   const duplicateDeck = useDuplicateDeck();
   const deleteDeck = useDeleteDeck();
   const { toast } = useToast();
   const { confirm, prompt } = useDialog();
-  const items = (decks.data ?? []) as DocumentSummary[];
+  const [filter, setFilter] = useState<Set<number>>(new Set());
+
+  const all = (decks.data ?? []) as DocumentSummary[];
+  const items =
+    filter.size === 0
+      ? all
+      : all.filter((d) => {
+          const ids = new Set(d.tags.map((t) => t.id));
+          return [...filter].every((id) => ids.has(id));
+        });
+  const toggleFilter = (id: number) =>
+    setFilter((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   const errMsg = (err: unknown, fallback: string) =>
     err instanceof ApiRequestError ? err.message : fallback;
 
@@ -85,7 +105,11 @@ export function FlatdeckDashboard({ onOpenDeck }: { onOpenDeck: (id: number) => 
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Presentations</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {decks.isLoading ? "Loading…" : `${items.length} deck${items.length === 1 ? "" : "s"}`}
+            {decks.isLoading
+              ? "Loading…"
+              : filter.size > 0
+                ? `${items.length} of ${all.length} deck${all.length === 1 ? "" : "s"}`
+                : `${all.length} deck${all.length === 1 ? "" : "s"}`}
           </p>
         </div>
         <Button onClick={handleNew} disabled={createDeck.isPending}>
@@ -93,13 +117,23 @@ export function FlatdeckDashboard({ onOpenDeck }: { onOpenDeck: (id: number) => 
         </Button>
       </div>
 
+      {(allTags.data?.length ?? 0) > 0 && (
+        <TagFilterBar
+          tags={allTags.data!}
+          selected={filter}
+          onToggle={toggleFilter}
+          onClear={() => setFilter(new Set())}
+          className="mb-5"
+        />
+      )}
+
       {decks.isLoading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="aspect-video animate-pulse rounded-xl border border-border bg-card" />
           ))}
         </div>
-      ) : items.length === 0 ? (
+      ) : all.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20 text-center">
           <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Presentation className="size-6" />
@@ -112,6 +146,10 @@ export function FlatdeckDashboard({ onOpenDeck }: { onOpenDeck: (id: number) => 
             <Plus /> New presentation
           </Button>
         </div>
+      ) : items.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
+          No presentations match the selected tag{filter.size === 1 ? "" : "s"}.
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((deck) => (
@@ -123,10 +161,26 @@ export function FlatdeckDashboard({ onOpenDeck }: { onOpenDeck: (id: number) => 
                 <div className="flex aspect-video items-center justify-center border-b border-border bg-background/60">
                   <Presentation className="size-8 text-muted-foreground/40 transition group-hover:text-primary/60" />
                 </div>
-                <div className="px-3 py-2.5">
+                <div className="px-3 pt-2.5">
                   <div className="truncate text-sm font-medium">{deck.title}</div>
                 </div>
               </button>
+              <div className="flex items-center gap-2 px-3 pb-2.5 pt-1.5">
+                <div className="min-w-0 flex-1">
+                  <TagChips tags={deck.tags} max={2} />
+                </div>
+                <TagPicker
+                  entityType="document"
+                  entityId={deck.id}
+                  current={deck.tags}
+                  align="end"
+                  trigger={
+                    <span className="flex items-center rounded-md p-1 text-muted-foreground opacity-0 transition hover:bg-accent hover:text-foreground group-hover:opacity-100 [&_svg]:size-3.5">
+                      <TagIcon />
+                    </span>
+                  }
+                />
+              </div>
               <Menu className="absolute right-1.5 top-1.5 opacity-0 transition group-hover:opacity-100">
                 <MenuTrigger>
                   <span className="flex size-7 items-center justify-center rounded-md bg-background/80 text-muted-foreground backdrop-blur hover:text-foreground [&_svg]:size-4">

@@ -16,6 +16,7 @@ import { FlatdrivePage } from "./pages/FlatdrivePage.tsx";
 import { FlatthoughtsPage } from "./pages/FlatthoughtsPage.tsx";
 import { AdminUsersPage } from "./pages/AdminUsersPage.tsx";
 import { SettingsPage } from "./pages/SettingsPage.tsx";
+import { TagsPage } from "./pages/TagsPage.tsx";
 import { SearchResultsPage } from "./pages/SearchResultsPage.tsx";
 import { AppCommandPalette } from "./components/AppCommandPalette.tsx";
 
@@ -121,6 +122,7 @@ export function App() {
       />
       <Route path="/admin/users" element={<AdminUsersPage user={user} />} />
       <Route path="/settings" element={<SettingsPage user={user} />} />
+      <Route path="/tags" element={<TagsPage user={user} />} />
       <Route path="/search" element={<SearchResultsPage user={user} />} />
       <Route
         path="/flatdrive/file/:id"

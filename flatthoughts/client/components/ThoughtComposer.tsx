@@ -10,7 +10,7 @@
 
 import "./flatthoughts.css";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ArrowLeft, BookOpen, Eye, Pencil } from "lucide-react";
 import type { SaveStatus } from "../hooks/useThought.ts";
 import { renderThoughtHtml } from "../lib/thought.ts";
@@ -25,6 +25,7 @@ export function ThoughtComposer({
   onBack,
   backLabel = "Back",
   placeholder = "Jot it down… markdown supported.",
+  headerExtra,
 }: {
   title: string;
   content: string;
@@ -34,6 +35,8 @@ export function ThoughtComposer({
   onBack: () => void;
   backLabel?: string;
   placeholder?: string;
+  /** Extra header controls (e.g. a tag picker), shown left of the Markdown button. */
+  headerExtra?: ReactNode;
 }) {
   const [showGuide, setShowGuide] = useState(false);
   // On narrow screens the split won't fit — toggle between write & preview.
@@ -81,6 +84,8 @@ export function ThoughtComposer({
           {mobileView === "write" ? <Eye /> : <Pencil />}
           {mobileView === "write" ? "Preview" : "Write"}
         </button>
+
+        {headerExtra}
 
         <button
           onClick={() => setShowGuide(true)}

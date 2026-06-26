@@ -19,9 +19,10 @@ import {
   LayoutTemplate,
   Palette,
   Play,
+  Tag as TagIcon,
 } from "lucide-react";
 import type { Document } from "@flatspace/shared/types";
-import { Menu, MenuContent, MenuItem, MenuLabel, MenuTrigger } from "@flatspace/shared/ui";
+import { Menu, MenuContent, MenuItem, MenuLabel, MenuTrigger, TagPicker } from "@flatspace/shared/ui";
 import { useDeck, type SaveStatus } from "../hooks/useDeck.ts";
 import {
   LAYOUTS,
@@ -291,6 +292,18 @@ function DeckSurface({
             ))}
           </MenuContent>
         </Menu>
+
+        <TagPicker
+          entityType="document"
+          entityId={deck.id}
+          current={deck.tags}
+          align="end"
+          trigger={
+            <span className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5">
+              <TagIcon /> {deck.tags.length > 0 ? deck.tags.length : "Tags"}
+            </span>
+          }
+        />
 
         <button
           onClick={() => fileRef.current?.click()}

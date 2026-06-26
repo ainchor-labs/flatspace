@@ -17,4 +17,10 @@ export {
   useCreateUser,
   useUpdateUser,
   useDeleteUser,
+  tagKeys,
+  useTags,
+  useCreateTag,
+  useUpdateTag,
+  useDeleteTag,
+  useSetEntityTags,
 } from "./query.ts";

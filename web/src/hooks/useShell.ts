@@ -35,6 +35,7 @@ export function useShell(user: User) {
       onSubmitSearch: (q: string) => navigate(`/search?q=${encodeURIComponent(q)}`),
       searchValue: search,
       onManageUsers: () => navigate("/admin/users"),
+      onManageTags: () => navigate("/tags"),
       onSettings: () => navigate("/settings"),
       onLogout: async () => {
         await logout.mutateAsync();

@@ -25,11 +25,12 @@ import {
   MoreVertical,
   Plus,
   Presentation,
+  Tag as TagIcon,
   Trash2,
   Upload,
   X,
 } from "lucide-react";
-import type { DriveFolder, FileItem } from "@flatspace/shared/types";
+import type { DriveFolder, FileItem, Tag } from "@flatspace/shared/types";
 import {
   Button,
   Menu,
@@ -38,10 +39,13 @@ import {
   MenuLabel,
   MenuSeparator,
   MenuTrigger,
+  TagChips,
+  TagFilterBar,
+  TagPicker,
   useDialog,
   useToast,
 } from "@flatspace/shared/ui";
-import { ApiRequestError, cn } from "@flatspace/shared/lib";
+import { ApiRequestError, cn, useTags } from "@flatspace/shared/lib";
 import {
   fileRawUrl,
   useBrowse,
@@ -118,6 +122,7 @@ export function FlatdriveDashboard({
   const deleteFolder = useDeleteFolder();
   const moveFile = useMoveFile();
   const moveFolder = useMoveFolder();
+  const allTags = useTags();
   const { toast } = useToast();
   const { confirm, prompt } = useDialog();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -125,6 +130,13 @@ export function FlatdriveDashboard({
   const [dragging, setDragging] = useState(false);
   const [sort, setSort] = useState<SortKey>("name");
   const [view, setView] = useState<View>("grid");
+  const [tagFilter, setTagFilter] = useState<Set<number>>(new Set());
+  const toggleTagFilter = (id: number) =>
+    setTagFilter((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   // Multi-select (cleared whenever the folder changes).
   const [selFolders, setSelFolders] = useState<Set<number>>(new Set());
@@ -300,9 +312,21 @@ export function FlatdriveDashboard({
 
   const listing = browse.data;
   const folders = useMemo(() => sortFolders(listing?.folders ?? [], sort), [listing, sort]);
-  const files = useMemo(() => sortFiles(listing?.files ?? [], sort), [listing, sort]);
+  const sortedFiles = useMemo(() => sortFiles(listing?.files ?? [], sort), [listing, sort]);
+  // Tag filter applies to files only (folders aren't taggable).
+  const files = useMemo(
+    () =>
+      tagFilter.size === 0
+        ? sortedFiles
+        : sortedFiles.filter((f) => {
+            const ids = new Set(f.tags.map((t) => t.id));
+            return [...tagFilter].every((id) => ids.has(id));
+          }),
+    [sortedFiles, tagFilter],
+  );
   const breadcrumb = listing?.breadcrumb ?? [];
-  const isEmpty = !browse.isLoading && folders.length === 0 && files.length === 0;
+  const isEmpty = !browse.isLoading && folders.length === 0 && sortedFiles.length === 0;
+  const noFileMatches = tagFilter.size > 0 && files.length === 0 && sortedFiles.length > 0;
   const selCount = selFolders.size + selFiles.size;
 
   return (
@@ -418,6 +442,21 @@ export function FlatdriveDashboard({
         </div>
       </div>
 
+      {(allTags.data?.length ?? 0) > 0 && (
+        <TagFilterBar
+          tags={allTags.data!}
+          selected={tagFilter}
+          onToggle={toggleTagFilter}
+          onClear={() => setTagFilter(new Set())}
+          className="mb-4"
+        />
+      )}
+      {noFileMatches && (
+        <p className="mb-4 text-sm text-muted-foreground">
+          No files match the selected tag{tagFilter.size === 1 ? "" : "s"}.
+        </p>
+      )}
+
       {/* Selection bar */}
       {selCount > 0 && (
         <div className="mb-3 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
@@ -519,6 +558,20 @@ export function FlatdriveDashboard({
                 meta={`${formatBytes(file.size)} · ${formatDate(file.updatedAt)}`}
                 first={folders.length === 0 && i === 0}
                 selected={selFiles.has(file.id)}
+                tags={file.tags}
+                tagPicker={
+                  <TagPicker
+                    entityType="file"
+                    entityId={file.id}
+                    current={file.tags}
+                    align="end"
+                    trigger={
+                      <span className="flex shrink-0 items-center rounded-md p-1 text-muted-foreground opacity-0 transition hover:bg-accent hover:text-foreground group-hover:opacity-100 [&_svg]:size-3.5">
+                        <TagIcon />
+                      </span>
+                    }
+                  />
+                }
                 onOpen={() => onOpenFile(file.id)}
                 onToggleSelect={() => toggleFile(file.id)}
                 onRename={() => renameFileItem(file)}
@@ -631,14 +684,13 @@ function FileCard({ file, ...a }: { file: FileItem } & ItemActions) {
   const Icon = iconFor(file.mime, file.name);
   const isImage = previewKind(file.mime, file.name) === "image";
   return (
-    <div className="group relative">
-      <button
-        onClick={a.onOpen}
-        className={cn(
-          "block w-full overflow-hidden rounded-xl border bg-card text-left transition hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5",
-          a.selected ? "border-primary" : "border-border",
-        )}
-      >
+    <div
+      className={cn(
+        "group relative overflow-hidden rounded-xl border bg-card transition hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5",
+        a.selected ? "border-primary" : "border-border",
+      )}
+    >
+      <button onClick={a.onOpen} className="block w-full text-left">
         <div className="flex aspect-[4/3] items-center justify-center border-b border-border bg-background/60">
           {isImage ? (
             <img src={fileRawUrl(file.id)} alt={file.name} className="size-full object-cover" loading="lazy" />
@@ -646,13 +698,29 @@ function FileCard({ file, ...a }: { file: FileItem } & ItemActions) {
             <Icon className="size-9 text-muted-foreground/40" />
           )}
         </div>
-        <div className="px-3 py-2">
+        <div className="px-3 pt-2">
           <div className="truncate text-sm font-medium">{file.name}</div>
           <div className="mt-0.5 text-xs text-muted-foreground">
             {formatBytes(file.size)} · {formatDate(file.updatedAt)}
           </div>
         </div>
       </button>
+      <div className="flex items-center gap-1.5 px-3 pb-2 pt-1.5">
+        <div className="min-w-0 flex-1">
+          <TagChips tags={file.tags} max={2} className="flex-nowrap" />
+        </div>
+        <TagPicker
+          entityType="file"
+          entityId={file.id}
+          current={file.tags}
+          align="end"
+          trigger={
+            <span className="flex items-center rounded-md p-1 text-muted-foreground opacity-0 transition hover:bg-accent hover:text-foreground group-hover:opacity-100 [&_svg]:size-3.5">
+              <TagIcon />
+            </span>
+          }
+        />
+      </div>
       <div className="absolute left-1.5 top-1.5">
         <SelectBox selected={a.selected} onToggle={a.onToggleSelect} />
       </div>
@@ -666,8 +734,17 @@ function ListRow({
   name,
   meta,
   first,
+  tags,
+  tagPicker,
   ...a
-}: { icon: React.ReactNode; name: string; meta: string; first: boolean } & ItemActions) {
+}: {
+  icon: React.ReactNode;
+  name: string;
+  meta: string;
+  first: boolean;
+  tags?: Tag[];
+  tagPicker?: React.ReactNode;
+} & ItemActions) {
   return (
     <div
       className={cn(
@@ -681,6 +758,12 @@ function ListRow({
         {icon}
         <span className="truncate text-sm font-medium">{name}</span>
       </button>
+      {tags && tags.length > 0 && (
+        <div className="hidden max-w-[40%] overflow-hidden md:block">
+          <TagChips tags={tags} max={3} className="flex-nowrap" />
+        </div>
+      )}
+      {tagPicker}
       <span className="shrink-0 text-xs text-muted-foreground">{meta}</span>
       <CardMenu className="relative shrink-0" onRename={a.onRename} onMove={a.onMove} onDelete={a.onDelete} />
     </div>

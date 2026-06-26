@@ -145,4 +145,48 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    id: 5,
+    name: "tags",
+    up: (db) => {
+      // A shared, per-user tag vocabulary plus a polymorphic join. One tag can
+      // label a document (Flatfile doc OR Flatdeck deck — both live in
+      // `documents`), a Flatdrive file, or a Flatthoughts note. entity_id has no
+      // real FK (it's polymorphic), so AFTER DELETE triggers clean orphaned
+      // taggings — covering cascade deletes the app code never sees.
+      db.exec(`
+        CREATE TABLE tags (
+          id         INTEGER PRIMARY KEY AUTOINCREMENT,
+          owner_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          name       TEXT NOT NULL,
+          color      TEXT NOT NULL DEFAULT '#6366f1',
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE UNIQUE INDEX idx_tags_owner_name ON tags(owner_id, name COLLATE NOCASE);
+
+        CREATE TABLE taggings (
+          id          INTEGER PRIMARY KEY AUTOINCREMENT,
+          tag_id      INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+          entity_type TEXT NOT NULL CHECK (entity_type IN ('document', 'file', 'thought')),
+          entity_id   INTEGER NOT NULL,
+          owner_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+          UNIQUE (tag_id, entity_type, entity_id)
+        );
+        CREATE INDEX idx_taggings_entity ON taggings(entity_type, entity_id);
+        CREATE INDEX idx_taggings_tag ON taggings(tag_id);
+        CREATE INDEX idx_taggings_owner ON taggings(owner_id);
+
+        CREATE TRIGGER trg_taggings_document_delete AFTER DELETE ON documents BEGIN
+          DELETE FROM taggings WHERE entity_type = 'document' AND entity_id = OLD.id;
+        END;
+        CREATE TRIGGER trg_taggings_file_delete AFTER DELETE ON files BEGIN
+          DELETE FROM taggings WHERE entity_type = 'file' AND entity_id = OLD.id;
+        END;
+        CREATE TRIGGER trg_taggings_thought_delete AFTER DELETE ON thoughts BEGIN
+          DELETE FROM taggings WHERE entity_type = 'thought' AND entity_id = OLD.id;
+        END;
+      `);
+    },
+  },
 ];

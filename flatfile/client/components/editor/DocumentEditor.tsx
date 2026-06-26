@@ -29,11 +29,12 @@ import {
   PanelLeft,
   Printer,
   Search,
+  Tag as TagIcon,
   X,
 } from "lucide-react";
 import type { Document, DocumentSettings } from "@flatspace/shared/types";
 import { cn } from "@flatspace/shared/lib";
-import { Menu, MenuContent, MenuItem, MenuTrigger } from "@flatspace/shared/ui";
+import { Menu, MenuContent, MenuItem, MenuTrigger, TagPicker } from "@flatspace/shared/ui";
 import { exportDocx, exportMarkdown, exportText } from "./export.ts";
 import { VersionHistory } from "./VersionHistory.tsx";
 import { MarkdownGuide } from "./MarkdownGuide.tsx";
@@ -268,6 +269,17 @@ function EditorSurface({
         >
           <BookText /> Markdown
         </button>
+        <TagPicker
+          entityType="document"
+          entityId={doc.id}
+          current={doc.tags}
+          align="end"
+          trigger={
+            <span className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5">
+              <TagIcon /> {doc.tags.length > 0 ? doc.tags.length : "Tags"}
+            </span>
+          }
+        />
         <DocFormatPopover settings={settings} onChange={updateSettings} />
         <Menu>
           <MenuTrigger>

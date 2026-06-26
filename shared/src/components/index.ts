@@ -15,6 +15,7 @@ export {
 } from "./ui/menu.tsx";
 export { ToastProvider, useToast, type ToastVariant } from "./ui/toast.tsx";
 export { DialogProvider, useDialog } from "./ui/dialog.tsx";
+export { TagBadge, TagChips, TagPicker, TagFilterBar } from "./ui/tags.tsx";
 
 // Shell + identity
 export { AppShell, type AppShellProps } from "./AppShell.tsx";

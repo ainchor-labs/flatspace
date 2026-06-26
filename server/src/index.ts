@@ -25,6 +25,7 @@ import { flatdeckRoutes } from "@flatspace/flatdeck/server";
 import { flatdriveRoutes } from "@flatspace/flatdrive/server";
 import { flatthoughtsRoutes } from "@flatspace/flatthoughts/server";
 import { adminRoutes } from "./admin-routes.ts";
+import { tagsRoutes } from "./tags-routes.ts";
 import { runStartupChecks } from "./startup-checks.ts";
 
 const PORT = Number(process.env.PORT ?? 7532);
@@ -58,6 +59,7 @@ async function main(): Promise<void> {
   // 3. Route trees, namespaced per app
   await app.register(authRoutes, { prefix: "/api/auth" });
   await app.register(adminRoutes, { prefix: "/api/admin" });
+  await app.register(tagsRoutes, { prefix: "/api/tags" });
   await app.register(flatfileRoutes, { prefix: "/api/flatfile" });
   await app.register(flatdeckRoutes, { prefix: "/api/flatdeck" });
   await app.register(flatdriveRoutes, { prefix: "/api/flatdrive" });

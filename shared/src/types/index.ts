@@ -11,6 +11,36 @@ export type AppId = "flatfile" | "flatdeck" | "flatdrive" | "flatthoughts";
 
 export type UserRole = "admin" | "member";
 
+/** The taggable entity kinds. `document` covers both Flatfile docs and Flatdeck decks. */
+export type TagEntityType = "document" | "file" | "thought";
+
+/** Curated tag colors (read well on the near-black UI). Client-safe. */
+export const TAG_PALETTE = [
+  "#6366f1", // indigo
+  "#8b5cf6", // violet
+  "#ec4899", // pink
+  "#f43f5e", // rose
+  "#f59e0b", // amber
+  "#22c55e", // green
+  "#06b6d4", // cyan
+  "#3b82f6", // blue
+  "#94a3b8", // slate
+] as const;
+
+/** A per-user label. */
+export interface Tag {
+  id: number;
+  ownerId: number;
+  name: string;
+  color: string;
+  createdAt: string;
+}
+
+/** A tag plus how many items currently carry it (for the manager screen). */
+export interface TagWithCount extends Tag {
+  count: number;
+}
+
 export type PermissionLevel = "view" | "edit";
 
 /**
@@ -71,6 +101,7 @@ export interface Document {
   app: AppId;
   starred: boolean;
   settings: DocumentSettings;
+  tags: Tag[];
   createdAt: string;
   updatedAt: string;
 }
@@ -117,6 +148,7 @@ export interface FileItem {
   folderId: number | null;
   mime: string;
   size: number;
+  tags: Tag[];
   createdAt: string;
   updatedAt: string;
 }
@@ -144,6 +176,7 @@ export interface Thought {
   content: string;
   ownerId: number;
   reviewedAt: string | null;
+  tags: Tag[];
   createdAt: string;
   updatedAt: string;
 }

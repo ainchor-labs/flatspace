@@ -3,7 +3,7 @@
  * Shows the username, role, and a logout action.
  */
 
-import { LogOut, Settings, User as UserIcon, Users } from "lucide-react";
+import { LogOut, Settings, Tag, User as UserIcon, Users } from "lucide-react";
 import type { User } from "../types/index.ts";
 import { Avatar } from "./Avatar.tsx";
 import { Menu, MenuContent, MenuItem, MenuLabel, MenuSeparator, MenuTrigger } from "./ui/menu.tsx";
@@ -13,12 +13,15 @@ export function UserMenu({
   onLogout,
   onSettings,
   onManageUsers,
+  onManageTags,
 }: {
   user: User;
   onLogout: () => void;
   onSettings?: () => void;
   /** Admin-only: open the user-management screen. */
   onManageUsers?: () => void;
+  /** Open the tag-management screen. */
+  onManageTags?: () => void;
 }) {
   return (
     <Menu>
@@ -40,6 +43,11 @@ export function UserMenu({
         <MenuItem icon={<Settings />} onSelect={onSettings}>
           Settings
         </MenuItem>
+        {onManageTags && (
+          <MenuItem icon={<Tag />} onSelect={onManageTags}>
+            Manage tags
+          </MenuItem>
+        )}
         {user.role === "admin" && onManageUsers && (
           <MenuItem icon={<Users />} onSelect={onManageUsers}>
             Manage users
