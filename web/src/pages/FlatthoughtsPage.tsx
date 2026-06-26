@@ -5,18 +5,20 @@
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "@flatspace/shared/ui";
 import type { User } from "@flatspace/shared/types";
-import { FlatthoughtsDashboard } from "@flatspace/flatthoughts/client";
+import { FlatthoughtsDashboard, FlatthoughtsSidebar } from "@flatspace/flatthoughts/client";
 import { useShell } from "../hooks/useShell.ts";
 
 export function FlatthoughtsPage({ user }: { user: User }) {
   const { shell } = useShell(user);
   const navigate = useNavigate();
+  const newThought = () => navigate("/flatthoughts/new");
+  const triage = () => navigate("/flatthoughts/triage");
   return (
-    <AppShell {...shell}>
+    <AppShell {...shell} sidebar={<FlatthoughtsSidebar onNew={newThought} onTriage={triage} />}>
       <FlatthoughtsDashboard
         onOpenThought={(id) => navigate(`/flatthoughts/thought/${id}`)}
-        onNew={() => navigate("/flatthoughts/new")}
-        onTriage={() => navigate("/flatthoughts/triage")}
+        onNew={newThought}
+        onTriage={triage}
       />
     </AppShell>
   );

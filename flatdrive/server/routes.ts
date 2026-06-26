@@ -74,6 +74,18 @@ export const flatdriveRoutes: FastifyPluginAsync = async (app) => {
     };
   });
 
+  // Flat, cross-folder views (Recent / All / Starred) for the sidebar.
+  app.get("/recent", async (request) => {
+    const user = request.user!;
+    return files.recent(user.id);
+  });
+
+  app.get("/all", async (request) => {
+    const user = request.user!;
+    const { starred } = request.query as { starred?: string };
+    return files.listAll(user.id, { starred: starred === "true" });
+  });
+
   app.get("/search", async (request) => {
     const user = request.user!;
     const { q } = request.query as { q?: string };
@@ -257,6 +269,15 @@ export const flatdriveRoutes: FastifyPluginAsync = async (app) => {
       files.move(id, target);
     }
     return files.get(id);
+  });
+
+  app.patch("/files/:id/star", async (request, reply) => {
+    const user = request.user!;
+    const id = Number((request.params as { id: string }).id);
+    const file = files.get(id);
+    if (!file || file.ownerId !== user.id) return reply.code(404).send(notFound);
+    files.setStarred(id, !file.starred);
+    return { id, starred: !file.starred };
   });
 
   app.delete("/files/:id", async (request, reply) => {

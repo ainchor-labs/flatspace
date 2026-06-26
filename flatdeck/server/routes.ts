@@ -19,7 +19,8 @@ export const flatdeckRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/decks", async (request) => {
     const user = request.user!;
-    return documents.listForUser(user.id, APP, {});
+    const { starred } = request.query as { starred?: string };
+    return documents.listForUser(user.id, APP, { starred: starred === "true" });
   });
 
   app.get("/decks/recent", async (request) => {
@@ -97,6 +98,17 @@ export const flatdeckRoutes: FastifyPluginAsync = async (app) => {
       content: body.content,
     });
     return updated;
+  });
+
+  app.patch("/decks/:id/star", async (request, reply) => {
+    const user = request.user!;
+    const { id } = request.params as { id: string };
+    const deck = documents.get(Number(id));
+    if (!deck || deck.app !== APP || deck.ownerId !== user.id) {
+      return reply.code(404).send({ error: "NotFound", message: "Deck not found", statusCode: 404 });
+    }
+    documents.setStarred(deck.id, !deck.starred);
+    return { id: deck.id, starred: !deck.starred };
   });
 
   app.get("/decks/:id/export", async (_request, reply) => {

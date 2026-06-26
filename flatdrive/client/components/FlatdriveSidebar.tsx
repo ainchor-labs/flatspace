@@ -1,19 +1,25 @@
 /**
- * Flatdrive sidebar — minimal, Drive-style: an Upload action, "My Drive" home,
- * and quick links to the root-level folders.
+ * Flatdrive sidebar — Drive-style navigation that fills the shared sidebar slot.
+ * An Upload action, the cross-folder views (Recent / Starred), the "FlatDrive"
+ * root browser, and quick links to the root-level folders.
  */
 
-import { HardDrive, Upload } from "lucide-react";
+import { Clock, HardDrive, Star, Upload } from "lucide-react";
 import { Button, SidebarItem, SidebarSection } from "@flatspace/shared/ui";
 import { useBrowse } from "../hooks/useFlatdrive.ts";
 
+/** Either a flat cross-folder view, or browsing a folder (null = root). */
+export type FlatdriveView = "recent" | "starred" | { folderId: number | null };
+
+const isBrowse = (v: FlatdriveView): v is { folderId: number | null } => typeof v === "object";
+
 export function FlatdriveSidebar({
-  folderId,
-  onOpenFolder,
+  view,
+  onSelect,
   onUpload,
 }: {
-  folderId: number | null;
-  onOpenFolder: (id: number | null) => void;
+  view: FlatdriveView;
+  onSelect: (view: FlatdriveView) => void;
   onUpload: () => void;
 }) {
   const root = useBrowse(null);
@@ -29,10 +35,22 @@ export function FlatdriveSidebar({
 
       <SidebarSection>
         <SidebarItem
+          icon={<Clock />}
+          label="Recent"
+          active={view === "recent"}
+          onClick={() => onSelect("recent")}
+        />
+        <SidebarItem
+          icon={<Star />}
+          label="Starred"
+          active={view === "starred"}
+          onClick={() => onSelect("starred")}
+        />
+        <SidebarItem
           icon={<HardDrive />}
-          label="My Drive"
-          active={folderId === null}
-          onClick={() => onOpenFolder(null)}
+          label="FlatDrive"
+          active={isBrowse(view) && view.folderId === null}
+          onClick={() => onSelect({ folderId: null })}
         />
       </SidebarSection>
 
@@ -43,8 +61,8 @@ export function FlatdriveSidebar({
               key={f.id}
               icon={<HardDrive />}
               label={f.name}
-              active={folderId === f.id}
-              onClick={() => onOpenFolder(f.id)}
+              active={isBrowse(view) && view.folderId === f.id}
+              onClick={() => onSelect({ folderId: f.id })}
             />
           ))}
         </SidebarSection>

@@ -189,4 +189,15 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    id: 6,
+    name: "file_starred",
+    up: (db) => {
+      // Flatdrive files gain a star flag, matching documents — powers the
+      // Starred view in the file browser.
+      db.exec(`
+        ALTER TABLE files ADD COLUMN starred INTEGER NOT NULL DEFAULT 0;
+      `);
+    },
+  },
 ];

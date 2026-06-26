@@ -1,21 +1,21 @@
 /**
- * AppShell — the shared nav shell used by every app in the suite.
+ * AppShell — the shared chrome used by every app in the suite.
  *
- * Layout: a slim top nav (logo · app switcher · global search · user menu) above
- * a row of [collapsible sidebar | main content]. Flatfile and Flatdeck render
- * their dashboards/editors into `children` and pass app-specific `sidebar`.
+ * Layout: a single, always-visible left sidebar beside the main content. The
+ * sidebar stacks, top to bottom: the Flatspace logo, the app switcher, global
+ * search, the app-specific navigation (`sidebar`), and the account menu pinned
+ * to the bottom. There is no top bar — the sidebar is the only persistent chrome.
  *
  * Router-agnostic: navigation + search + logout are delivered via callbacks so
  * this component has no dependency on the host's routing library.
  */
 
-import { PanelLeft, Search } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { Search } from "lucide-react";
+import { type ReactNode } from "react";
 import type { AppId, User } from "../types/index.ts";
 import { cn } from "../lib/cn.ts";
 import { AppSwitcher } from "./AppSwitcher.tsx";
 import { Logo } from "./Logo.tsx";
-import { Sidebar } from "./Sidebar.tsx";
 import { UserMenu } from "./UserMenu.tsx";
 
 export interface AppShellProps {
@@ -28,12 +28,13 @@ export interface AppShellProps {
   /** Called when the user presses Enter in the search box (e.g. open results). */
   onSubmitSearch?: (query: string) => void;
   searchValue?: string;
-  /** Admin-only: open the user-management screen (shown in the user menu). */
+  /** Admin-only: open the user-management screen (shown in the account menu). */
   onManageUsers?: () => void;
-  /** Open the tag-management screen (shown in the user menu). */
+  /** Open the tag-management screen (shown in the account menu). */
   onManageTags?: () => void;
-  /** Open the current user's account settings (shown in the user menu). */
+  /** Open the current user's account settings (shown in the account menu). */
   onSettings?: () => void;
+  /** App-specific navigation rendered in the middle of the sidebar. */
   sidebar?: ReactNode;
   children: ReactNode;
 }
@@ -53,67 +54,56 @@ export function AppShell({
   sidebar,
   children,
 }: AppShellProps) {
-  const [collapsed, setCollapsed] = useState(false);
-
   return (
-    <div className="flex h-screen flex-col bg-background text-foreground">
-      {/* Top nav */}
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-3">
-        {sidebar && (
+    <div className="flex h-screen bg-background text-foreground">
+      {/* Persistent sidebar — the suite's only chrome. */}
+      <aside className="flex w-64 shrink-0 flex-col border-r border-border bg-card/40">
+        <div className="flex flex-col gap-2 px-3 pb-2 pt-3">
           <button
-            onClick={() => setCollapsed((c) => !c)}
-            aria-label="Toggle sidebar"
-            className="rounded-md p-2 text-muted-foreground transition hover:bg-accent hover:text-foreground"
+            onClick={onHome}
+            className="self-start rounded-md px-1 py-1 transition hover:opacity-90"
+            aria-label="Flatspace home"
           >
-            <PanelLeft className="size-4" />
+            <Logo />
           </button>
-        )}
 
-        <button
-          onClick={onHome}
-          className="rounded-md px-1.5 py-1 transition hover:opacity-90"
-          aria-label="Flatspace home"
-        >
-          <Logo />
-        </button>
+          <AppSwitcher current={currentApp} onSelect={onSwitchApp} />
 
-        <div className="mx-1 h-5 w-px bg-border" />
-
-        <AppSwitcher current={currentApp} onSelect={onSwitchApp} />
-
-        {/* Global search */}
-        <div className="relative mx-auto hidden w-full max-w-md md:block">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={searchValue ?? ""}
-            onChange={(e) => onSearch?.(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && searchValue?.trim()) onSubmitSearch?.(searchValue.trim());
-            }}
-            placeholder="Search documents & files…  (press Enter)"
-            className={cn(
-              "h-9 w-full rounded-lg border border-border bg-card pl-9 pr-3 text-sm",
-              "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            )}
-          />
+          {/* Global search */}
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={searchValue ?? ""}
+              onChange={(e) => onSearch?.(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && searchValue?.trim()) onSubmitSearch?.(searchValue.trim());
+              }}
+              placeholder="Search…"
+              className={cn(
+                "h-9 w-full rounded-lg border border-border bg-card pl-8 pr-3 text-sm",
+                "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              )}
+            />
+          </div>
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        {/* App-specific navigation (scrolls independently). */}
+        <div className="min-h-0 flex-1 overflow-y-auto">{sidebar}</div>
+
+        {/* Account, pinned to the bottom. */}
+        <div className="border-t border-border p-2">
           <UserMenu
             user={user}
+            variant="bar"
             onLogout={onLogout}
             onManageUsers={onManageUsers}
             onManageTags={onManageTags}
             onSettings={onSettings}
           />
         </div>
-      </header>
+      </aside>
 
-      {/* Body */}
-      <div className="flex min-h-0 flex-1">
-        {sidebar && <Sidebar collapsed={collapsed}>{sidebar}</Sidebar>}
-        <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
-      </div>
+      <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
     </div>
   );
 }

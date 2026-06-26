@@ -7,7 +7,7 @@
  */
 
 import { useState } from "react";
-import { Copy, MoreVertical, Pencil, Plus, Presentation, Tag as TagIcon, Trash2 } from "lucide-react";
+import { Copy, MoreVertical, Pencil, Plus, Presentation, Star, Tag as TagIcon, Trash2 } from "lucide-react";
 import type { DocumentSummary } from "@flatspace/shared/types";
 import {
   Button,
@@ -22,22 +22,37 @@ import {
   useDialog,
   useToast,
 } from "@flatspace/shared/ui";
-import { ApiRequestError, useTags } from "@flatspace/shared/lib";
+import { ApiRequestError, cn, useTags } from "@flatspace/shared/lib";
 import {
   useCreateDeck,
-  useDecks,
+  useDeckList,
   useDeleteDeck,
   useDuplicateDeck,
   useRenameDeck,
+  useToggleStarDeck,
+  type FlatdeckView,
 } from "../hooks/useFlatdeck.ts";
 
-export function FlatdeckDashboard({ onOpenDeck }: { onOpenDeck: (id: number) => void }) {
-  const decks = useDecks();
+const TITLES: Record<FlatdeckView, string> = {
+  recent: "Recent",
+  all: "All presentations",
+  starred: "Starred",
+};
+
+export function FlatdeckDashboard({
+  view = "recent",
+  onOpenDeck,
+}: {
+  view?: FlatdeckView;
+  onOpenDeck: (id: number) => void;
+}) {
+  const decks = useDeckList(view);
   const allTags = useTags();
   const createDeck = useCreateDeck();
   const renameDeck = useRenameDeck();
   const duplicateDeck = useDuplicateDeck();
   const deleteDeck = useDeleteDeck();
+  const toggleStar = useToggleStarDeck();
   const { toast } = useToast();
   const { confirm, prompt } = useDialog();
   const [filter, setFilter] = useState<Set<number>>(new Set());
@@ -103,7 +118,7 @@ export function FlatdeckDashboard({ onOpenDeck }: { onOpenDeck: (id: number) => 
     <div className="mx-auto max-w-6xl px-6 py-8">
       <div className="mb-6 flex items-end justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Presentations</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{TITLES[view]}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {decks.isLoading
               ? "Loading…"
@@ -164,6 +179,18 @@ export function FlatdeckDashboard({ onOpenDeck }: { onOpenDeck: (id: number) => 
                 <div className="px-3 pt-2.5">
                   <div className="truncate text-sm font-medium">{deck.title}</div>
                 </div>
+              </button>
+              <button
+                onClick={() => toggleStar.mutate(deck.id)}
+                aria-label={deck.starred ? "Unstar" : "Star"}
+                className={cn(
+                  "absolute left-1.5 top-1.5 flex size-7 items-center justify-center rounded-md bg-background/80 backdrop-blur transition [&_svg]:size-4",
+                  deck.starred
+                    ? "text-amber-400 [&_svg]:fill-amber-400"
+                    : "text-muted-foreground opacity-0 hover:text-foreground group-hover:opacity-100",
+                )}
+              >
+                <Star />
               </button>
               <div className="flex items-center gap-2 px-3 pb-2.5 pt-1.5">
                 <div className="min-w-0 flex-1">

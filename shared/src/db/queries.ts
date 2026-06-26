@@ -446,6 +446,7 @@ interface FileRecord {
   folder_id: number | null;
   mime: string;
   size: number;
+  starred: number;
   storage_key: string;
   created_at: string;
   updated_at: string;
@@ -463,6 +464,7 @@ function toFileItem(r: FileRecord): FileItem {
     folderId: r.folder_id,
     mime: r.mime,
     size: r.size,
+    starred: r.starred === 1,
     tags: [],
     createdAt: r.created_at,
     updatedAt: r.updated_at,
@@ -577,6 +579,28 @@ export const files = {
             .all(ownerId, folderId)
     ) as FileRecord[];
     return fillTags("file", rows.map(toFileItem), db);
+  },
+
+  /** Every file owned by a user (across all folders), most-recently-updated first. */
+  listAll(ownerId: number, opts: { starred?: boolean } = {}, db: DB = getDb()): FileItem[] {
+    const clauses = ["owner_id = ?"];
+    if (opts.starred) clauses.push("starred = 1");
+    const rows = db
+      .prepare(`SELECT * FROM files WHERE ${clauses.join(" AND ")} ORDER BY updated_at DESC`)
+      .all(ownerId) as FileRecord[];
+    return fillTags("file", rows.map(toFileItem), db);
+  },
+
+  /** The user's most recently updated files, regardless of folder. */
+  recent(ownerId: number, limit = 24, db: DB = getDb()): FileItem[] {
+    const rows = db
+      .prepare("SELECT * FROM files WHERE owner_id = ? ORDER BY updated_at DESC LIMIT ?")
+      .all(ownerId, limit) as FileRecord[];
+    return fillTags("file", rows.map(toFileItem), db);
+  },
+
+  setStarred(id: number, starred: boolean, db: DB = getDb()): void {
+    db.prepare("UPDATE files SET starred = ? WHERE id = ?").run(starred ? 1 : 0, id);
   },
 
   get(id: number, db: DB = getDb()): FileItem | null {

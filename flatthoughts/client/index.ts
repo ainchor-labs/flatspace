@@ -6,5 +6,6 @@
  */
 
 export { FlatthoughtsDashboard } from "./components/FlatthoughtsDashboard.tsx";
+export { FlatthoughtsSidebar } from "./components/FlatthoughtsSidebar.tsx";
 export * from "./hooks/useFlatthoughts.ts";
 export { thoughtTitle, thoughtSnippet, renderThoughtHtml, shortDate } from "./lib/thought.ts";

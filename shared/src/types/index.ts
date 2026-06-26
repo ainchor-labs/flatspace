@@ -148,6 +148,7 @@ export interface FileItem {
   folderId: number | null;
   mime: string;
   size: number;
+  starred: boolean;
   tags: Tag[];
   createdAt: string;
   updatedAt: string;

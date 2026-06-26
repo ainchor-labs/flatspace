@@ -30,6 +30,33 @@ export function useFile(id: number) {
   });
 }
 
+/** Flat list of the user's most recently updated files (across all folders). */
+export function useRecentFiles(enabled = true) {
+  return useQuery({
+    queryKey: ["flatdrive", "recent"],
+    queryFn: () => api.get<FileItem[]>("/flatdrive/recent"),
+    enabled,
+  });
+}
+
+/** Flat list of every file the user has starred. */
+export function useStarredFiles(enabled = true) {
+  return useQuery({
+    queryKey: ["flatdrive", "starred"],
+    queryFn: () => api.get<FileItem[]>("/flatdrive/all?starred=true"),
+    enabled,
+  });
+}
+
+export function useToggleStarFile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      api.patch<{ id: number; starred: boolean }>(`/flatdrive/files/${id}/star`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: flatdriveKeys.all }),
+  });
+}
+
 /** Search the user's files by name. Disabled for empty queries. */
 export function useSearchFiles(q: string) {
   const term = q.trim();

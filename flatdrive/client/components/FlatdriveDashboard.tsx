@@ -25,6 +25,7 @@ import {
   MoreVertical,
   Plus,
   Presentation,
+  Star,
   Tag as TagIcon,
   Trash2,
   Upload,
@@ -54,8 +55,11 @@ import {
   useDeleteFolder,
   useMoveFile,
   useMoveFolder,
+  useRecentFiles,
   useRenameFile,
   useRenameFolder,
+  useStarredFiles,
+  useToggleStarFile,
   useUploadFile,
 } from "../hooks/useFlatdrive.ts";
 import { formatBytes, iconFor, previewKind } from "../lib/fileType.ts";
@@ -63,6 +67,11 @@ import { MoveDialog, type MoveTarget } from "./MoveDialog.tsx";
 
 type SortKey = "name" | "modified" | "size";
 type View = "grid" | "list";
+
+/** Flat cross-folder views (no folder browsing). */
+export type FlatView = "recent" | "starred";
+
+const FLAT_TITLES: Record<FlatView, string> = { recent: "Recent", starred: "Starred" };
 
 const SORT_LABELS: Record<SortKey, string> = {
   name: "Name",
@@ -94,6 +103,7 @@ function sortFiles(files: FileItem[], key: SortKey): FileItem[] {
 
 export function FlatdriveDashboard({
   folderId,
+  flatView = null,
   onOpenFolder,
   onOpenFile,
   registerUpload,
@@ -102,6 +112,8 @@ export function FlatdriveDashboard({
   onNewFlatthought,
 }: {
   folderId: number | null;
+  /** When set, show a flat cross-folder file list instead of the folder browser. */
+  flatView?: FlatView | null;
   onOpenFolder: (id: number | null) => void;
   onOpenFile: (id: number) => void;
   /** Lets a parent (e.g. the sidebar's Upload button) open the file picker. */
@@ -114,6 +126,8 @@ export function FlatdriveDashboard({
   onNewFlatthought?: () => void;
 }) {
   const browse = useBrowse(folderId);
+  const recent = useRecentFiles(flatView === "recent");
+  const starred = useStarredFiles(flatView === "starred");
   const upload = useUploadFile();
   const createFolder = useCreateFolder();
   const renameFile = useRenameFile();
@@ -122,6 +136,7 @@ export function FlatdriveDashboard({
   const deleteFolder = useDeleteFolder();
   const moveFile = useMoveFile();
   const moveFolder = useMoveFolder();
+  const toggleStar = useToggleStarFile();
   const allTags = useTags();
   const { toast } = useToast();
   const { confirm, prompt } = useDialog();
@@ -146,7 +161,7 @@ export function FlatdriveDashboard({
   useEffect(() => {
     setSelFolders(new Set());
     setSelFiles(new Set());
-  }, [folderId]);
+  }, [folderId, flatView]);
 
   useEffect(() => {
     registerUpload?.(() => fileRef.current?.click());
@@ -310,9 +325,17 @@ export function FlatdriveDashboard({
       return next;
     });
 
+  // In a flat view (Recent/Starred) there are no folders or breadcrumb — just a
+  // cross-folder file list from the matching query.
+  const flatQuery = flatView === "recent" ? recent : flatView === "starred" ? starred : null;
+  const isLoading = flatView ? (flatQuery?.isLoading ?? false) : browse.isLoading;
   const listing = browse.data;
-  const folders = useMemo(() => sortFolders(listing?.folders ?? [], sort), [listing, sort]);
-  const sortedFiles = useMemo(() => sortFiles(listing?.files ?? [], sort), [listing, sort]);
+  const folders = useMemo(
+    () => (flatView ? [] : sortFolders(listing?.folders ?? [], sort)),
+    [flatView, listing, sort],
+  );
+  const rawFiles = flatView ? (flatQuery?.data ?? []) : (listing?.files ?? []);
+  const sortedFiles = useMemo(() => sortFiles(rawFiles, sort), [rawFiles, sort]);
   // Tag filter applies to files only (folders aren't taggable).
   const files = useMemo(
     () =>
@@ -325,7 +348,7 @@ export function FlatdriveDashboard({
     [sortedFiles, tagFilter],
   );
   const breadcrumb = listing?.breadcrumb ?? [];
-  const isEmpty = !browse.isLoading && folders.length === 0 && sortedFiles.length === 0;
+  const isEmpty = !isLoading && folders.length === 0 && sortedFiles.length === 0;
   const noFileMatches = tagFilter.size > 0 && files.length === 0 && sortedFiles.length > 0;
   const selCount = selFolders.size + selFiles.size;
 
@@ -342,53 +365,59 @@ export function FlatdriveDashboard({
       {/* Toolbar + breadcrumb */}
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <Menu>
-            <MenuTrigger>
-              <Button size="sm" className="shrink-0">
-                <Plus /> New <ChevronDown className="!size-3.5 opacity-70" />
-              </Button>
-            </MenuTrigger>
-            <MenuContent align="start">
-              <MenuItem icon={<FileUp />} onSelect={() => fileRef.current?.click()}>
-                File upload
-              </MenuItem>
-              <MenuItem icon={<FolderUp />} onSelect={() => folderRef.current?.click()}>
-                Folder upload
-              </MenuItem>
-              <MenuSeparator />
-              <MenuItem icon={<FileText />} onSelect={() => onNewFlatfile?.()}>
-                Flatfile
-              </MenuItem>
-              <MenuItem icon={<Presentation />} onSelect={() => onNewFlatdeck?.()}>
-                Flatdeck
-              </MenuItem>
-              <MenuItem icon={<Lightbulb />} onSelect={() => onNewFlatthought?.()}>
-                Flatthought
-              </MenuItem>
-            </MenuContent>
-          </Menu>
-          <nav className="flex min-w-0 items-center gap-1 text-sm">
-            <button
-              onClick={() => onOpenFolder(null)}
-              className="flex items-center gap-1.5 rounded px-1.5 py-1 text-muted-foreground transition hover:text-foreground [&_svg]:size-4"
-            >
-              <HardDrive /> My Drive
-            </button>
-            {breadcrumb.map((f) => (
-              <span key={f.id} className="flex min-w-0 items-center gap-1">
-                <ChevronRight className="size-3.5 shrink-0 text-muted-foreground/50" />
+          {flatView ? (
+            <h1 className="text-xl font-semibold tracking-tight">{FLAT_TITLES[flatView]}</h1>
+          ) : (
+            <>
+              <Menu>
+                <MenuTrigger>
+                  <Button size="sm" className="shrink-0">
+                    <Plus /> New <ChevronDown className="!size-3.5 opacity-70" />
+                  </Button>
+                </MenuTrigger>
+                <MenuContent align="start">
+                  <MenuItem icon={<FileUp />} onSelect={() => fileRef.current?.click()}>
+                    File upload
+                  </MenuItem>
+                  <MenuItem icon={<FolderUp />} onSelect={() => folderRef.current?.click()}>
+                    Folder upload
+                  </MenuItem>
+                  <MenuSeparator />
+                  <MenuItem icon={<FileText />} onSelect={() => onNewFlatfile?.()}>
+                    Flatfile
+                  </MenuItem>
+                  <MenuItem icon={<Presentation />} onSelect={() => onNewFlatdeck?.()}>
+                    Flatdeck
+                  </MenuItem>
+                  <MenuItem icon={<Lightbulb />} onSelect={() => onNewFlatthought?.()}>
+                    Flatthought
+                  </MenuItem>
+                </MenuContent>
+              </Menu>
+              <nav className="flex min-w-0 items-center gap-1 text-sm">
                 <button
-                  onClick={() => onOpenFolder(f.id)}
-                  className={cn(
-                    "truncate rounded px-1.5 py-1 transition hover:text-foreground",
-                    f.id === folderId ? "font-medium text-foreground" : "text-muted-foreground",
-                  )}
+                  onClick={() => onOpenFolder(null)}
+                  className="flex items-center gap-1.5 rounded px-1.5 py-1 text-muted-foreground transition hover:text-foreground [&_svg]:size-4"
                 >
-                  {f.name}
+                  <HardDrive /> FlatDrive
                 </button>
-              </span>
-            ))}
-          </nav>
+                {breadcrumb.map((f) => (
+                  <span key={f.id} className="flex min-w-0 items-center gap-1">
+                    <ChevronRight className="size-3.5 shrink-0 text-muted-foreground/50" />
+                    <button
+                      onClick={() => onOpenFolder(f.id)}
+                      className={cn(
+                        "truncate rounded px-1.5 py-1 transition hover:text-foreground",
+                        f.id === folderId ? "font-medium text-foreground" : "text-muted-foreground",
+                      )}
+                    >
+                      {f.name}
+                    </button>
+                  </span>
+                ))}
+              </nav>
+            </>
+          )}
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
@@ -416,9 +445,11 @@ export function FlatdriveDashboard({
           >
             {view === "grid" ? <ListIcon /> : <LayoutGrid />}
           </Button>
-          <Button variant="outline" size="sm" onClick={newFolder}>
-            <FolderPlus /> New folder
-          </Button>
+          {!flatView && (
+            <Button variant="outline" size="sm" onClick={newFolder}>
+              <FolderPlus /> New folder
+            </Button>
+          )}
           <input
             ref={fileRef}
             type="file"
@@ -488,7 +519,7 @@ export function FlatdriveDashboard({
 
       {upload.isPending && <p className="mb-3 text-xs text-muted-foreground">Uploading…</p>}
 
-      {browse.isLoading ? (
+      {isLoading ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="aspect-[4/3] animate-pulse rounded-xl border border-border bg-card" />
@@ -497,11 +528,21 @@ export function FlatdriveDashboard({
       ) : isEmpty ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20 text-center">
           <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <Upload className="size-6" />
+            {flatView === "starred" ? <Star className="size-6" /> : <Upload className="size-6" />}
           </div>
-          <h3 className="text-base font-medium">This folder is empty</h3>
+          <h3 className="text-base font-medium">
+            {flatView === "recent"
+              ? "No files yet"
+              : flatView === "starred"
+                ? "No starred files"
+                : "This folder is empty"}
+          </h3>
           <p className="mt-1 max-w-xs text-sm text-muted-foreground">
-            Drag files here, or use the New menu to upload.
+            {flatView === "starred"
+              ? "Star a file to find it here quickly."
+              : flatView === "recent"
+                ? "Files you upload will show up here, newest first."
+                : "Drag files here, or use the New menu to upload."}
           </p>
         </div>
       ) : view === "grid" ? (
@@ -525,6 +566,7 @@ export function FlatdriveDashboard({
               selected={selFiles.has(file.id)}
               onOpen={() => onOpenFile(file.id)}
               onToggleSelect={() => toggleFile(file.id)}
+              onToggleStar={() => toggleStar.mutate(file.id)}
               onRename={() => renameFileItem(file)}
               onMove={() => setMoving({ fileIds: [file.id], folderIds: [] })}
               onDelete={() => deleteFileItem(file)}
@@ -572,8 +614,10 @@ export function FlatdriveDashboard({
                     }
                   />
                 }
+                starred={file.starred}
                 onOpen={() => onOpenFile(file.id)}
                 onToggleSelect={() => toggleFile(file.id)}
+                onToggleStar={() => toggleStar.mutate(file.id)}
                 onRename={() => renameFileItem(file)}
                 onMove={() => setMoving({ fileIds: [file.id], folderIds: [] })}
                 onDelete={() => deleteFileItem(file)}
@@ -613,6 +657,8 @@ interface ItemActions {
   onRename: () => void;
   onMove: () => void;
   onDelete: () => void;
+  /** Files only — folders aren't starrable. */
+  onToggleStar?: () => void;
 }
 
 function SelectBox({ selected, onToggle }: { selected: boolean; onToggle: () => void }) {
@@ -639,8 +685,13 @@ function CardMenu({
   onRename,
   onMove,
   onDelete,
+  onToggleStar,
+  starred,
   className = "absolute right-1.5 top-1.5",
-}: Pick<ItemActions, "onRename" | "onMove" | "onDelete"> & { className?: string }) {
+}: Pick<ItemActions, "onRename" | "onMove" | "onDelete" | "onToggleStar"> & {
+  starred?: boolean;
+  className?: string;
+}) {
   return (
     <Menu className={cn(className, "opacity-0 transition group-hover:opacity-100")}>
       <MenuTrigger>
@@ -649,6 +700,11 @@ function CardMenu({
         </span>
       </MenuTrigger>
       <MenuContent align="end">
+        {onToggleStar && (
+          <MenuItem icon={<Star />} onSelect={onToggleStar}>
+            {starred ? "Remove star" : "Star"}
+          </MenuItem>
+        )}
         <MenuItem onSelect={onRename}>Rename</MenuItem>
         <MenuItem onSelect={onMove}>Move to…</MenuItem>
         <MenuItem destructive onSelect={onDelete}>
@@ -724,7 +780,27 @@ function FileCard({ file, ...a }: { file: FileItem } & ItemActions) {
       <div className="absolute left-1.5 top-1.5">
         <SelectBox selected={a.selected} onToggle={a.onToggleSelect} />
       </div>
-      <CardMenu onRename={a.onRename} onMove={a.onMove} onDelete={a.onDelete} />
+      {a.onToggleStar && (
+        <button
+          onClick={a.onToggleStar}
+          aria-label={file.starred ? "Remove star" : "Star"}
+          className={cn(
+            "absolute right-10 top-1.5 flex size-7 items-center justify-center rounded-md bg-background/80 backdrop-blur transition [&_svg]:size-4",
+            file.starred
+              ? "text-amber-400 [&_svg]:fill-amber-400"
+              : "text-muted-foreground opacity-0 hover:text-foreground group-hover:opacity-100",
+          )}
+        >
+          <Star />
+        </button>
+      )}
+      <CardMenu
+        onRename={a.onRename}
+        onMove={a.onMove}
+        onDelete={a.onDelete}
+        onToggleStar={a.onToggleStar}
+        starred={file.starred}
+      />
     </div>
   );
 }
@@ -736,6 +812,7 @@ function ListRow({
   first,
   tags,
   tagPicker,
+  starred,
   ...a
 }: {
   icon: React.ReactNode;
@@ -744,6 +821,7 @@ function ListRow({
   first: boolean;
   tags?: Tag[];
   tagPicker?: React.ReactNode;
+  starred?: boolean;
 } & ItemActions) {
   return (
     <div
@@ -765,7 +843,14 @@ function ListRow({
       )}
       {tagPicker}
       <span className="shrink-0 text-xs text-muted-foreground">{meta}</span>
-      <CardMenu className="relative shrink-0" onRename={a.onRename} onMove={a.onMove} onDelete={a.onDelete} />
+      <CardMenu
+        className="relative shrink-0"
+        onRename={a.onRename}
+        onMove={a.onMove}
+        onDelete={a.onDelete}
+        onToggleStar={a.onToggleStar}
+        starred={starred}
+      />
     </div>
   );
 }
