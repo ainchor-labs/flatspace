@@ -14,8 +14,10 @@ services:
       # Optional: max upload size in bytes (default 1 GiB).
       # FLATSPACE_MAX_UPLOAD: "1073741824"
     volumes:
-      # Persists the SQLite database and uploaded files across restarts.
-      - flatspace-data:/data
+      # Bind-mount to a real NAS folder so the SQLite DB (flatspace.sqlite) and
+      # uploaded blobs (uploads/) are directly visible and backup-able on the NAS.
+      # Keep this on LOCAL NAS storage — SQLite can corrupt over NFS/SMB shares.
+      - /volume1/Docker/flatspace/data:/data
     healthcheck:
       test:
         - CMD
@@ -26,6 +28,3 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
-
-volumes:
-  flatspace-data:
