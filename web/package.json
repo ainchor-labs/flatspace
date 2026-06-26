@@ -16,6 +16,7 @@
     "@flatspace/flatdeck": "workspace:*",
     "@flatspace/flatdrive": "workspace:*",
     "@flatspace/flatfile": "workspace:*",
+    "@flatspace/flatthoughts": "workspace:*",
     "@flatspace/shared": "workspace:*",
     "@tanstack/react-query": "^5.62.0",
     "lucide-react": "^0.469.0",

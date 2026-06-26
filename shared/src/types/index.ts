@@ -7,7 +7,7 @@
  * from anywhere (browser or server).
  */
 
-export type AppId = "flatfile" | "flatdeck" | "flatdrive";
+export type AppId = "flatfile" | "flatdeck" | "flatdrive" | "flatthoughts";
 
 export type UserRole = "admin" | "member";
 
@@ -127,6 +127,25 @@ export interface DriveListing {
   breadcrumb: DriveFolder[];
   folders: DriveFolder[];
   files: FileItem[];
+}
+
+/* ------------------------------------------------------------------ */
+/* Flatthoughts (quick notes)                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A quick note. Content is markdown (rendered on the client). `reviewedAt` is
+ * stamped each time a thought is "kept" in triage (swipe) mode, so the triage
+ * deck can surface the least-recently-reviewed thoughts first.
+ */
+export interface Thought {
+  id: number;
+  title: string;
+  content: string;
+  ownerId: number;
+  reviewedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /* ------------------------------------------------------------------ */

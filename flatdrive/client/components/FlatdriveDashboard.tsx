@@ -20,6 +20,7 @@ import {
   FolderUp,
   HardDrive,
   LayoutGrid,
+  Lightbulb,
   List as ListIcon,
   MoreVertical,
   Plus,
@@ -94,6 +95,7 @@ export function FlatdriveDashboard({
   registerUpload,
   onNewFlatfile,
   onNewFlatdeck,
+  onNewFlatthought,
 }: {
   folderId: number | null;
   onOpenFolder: (id: number | null) => void;
@@ -104,6 +106,8 @@ export function FlatdriveDashboard({
   onNewFlatfile?: () => void;
   /** Create a new Flatdeck presentation (wired by the web host) and open it. */
   onNewFlatdeck?: () => void;
+  /** Start a new Flatthoughts note (wired by the web host). */
+  onNewFlatthought?: () => void;
 }) {
   const browse = useBrowse(folderId);
   const upload = useUploadFile();
@@ -333,6 +337,9 @@ export function FlatdriveDashboard({
               </MenuItem>
               <MenuItem icon={<Presentation />} onSelect={() => onNewFlatdeck?.()}>
                 Flatdeck
+              </MenuItem>
+              <MenuItem icon={<Lightbulb />} onSelect={() => onNewFlatthought?.()}>
+                Flatthought
               </MenuItem>
             </MenuContent>
           </Menu>

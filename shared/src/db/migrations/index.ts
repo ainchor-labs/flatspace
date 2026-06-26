@@ -124,4 +124,25 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    id: 4,
+    name: "flatthoughts",
+    up: (db) => {
+      // Flatthoughts: quick markdown notes. Like Flatdrive, it keeps its own
+      // table rather than reusing `documents` (whose `app` CHECK would need a
+      // rebuild). `reviewed_at` is bumped when a thought is kept in triage mode.
+      db.exec(`
+        CREATE TABLE thoughts (
+          id          INTEGER PRIMARY KEY AUTOINCREMENT,
+          title       TEXT NOT NULL DEFAULT '',
+          content     TEXT NOT NULL DEFAULT '',
+          owner_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          reviewed_at TEXT,
+          created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX idx_thoughts_owner ON thoughts(owner_id);
+      `);
+    },
+  },
 ];

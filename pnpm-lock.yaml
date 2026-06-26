@@ -192,6 +192,43 @@ importers:
         specifier: ^18.3.5
         version: 18.3.7(@types/react@18.3.31)
 
+  flatthoughts:
+    dependencies:
+      '@flatspace/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@tanstack/react-query':
+        specifier: ^5.62.0
+        version: 5.101.0(react@18.3.1)
+      fastify:
+        specifier: ^5.2.0
+        version: 5.8.5
+      lucide-react:
+        specifier: ^0.469.0
+        version: 0.469.0(react@18.3.1)
+      markdown-it:
+        specifier: ^14.2.0
+        version: 14.2.0
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+    devDependencies:
+      '@types/markdown-it':
+        specifier: ^14.1.2
+        version: 14.1.2
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.19.21
+      '@types/react':
+        specifier: ^18.3.18
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ^18.3.5
+        version: 18.3.7(@types/react@18.3.31)
+
   server:
     dependencies:
       '@fastify/static':
@@ -206,6 +243,9 @@ importers:
       '@flatspace/flatfile':
         specifier: workspace:*
         version: link:../flatfile
+      '@flatspace/flatthoughts':
+        specifier: workspace:*
+        version: link:../flatthoughts
       '@flatspace/shared':
         specifier: workspace:*
         version: link:../shared
@@ -298,6 +338,9 @@ importers:
       '@flatspace/flatfile':
         specifier: workspace:*
         version: link:../flatfile
+      '@flatspace/flatthoughts':
+        specifier: workspace:*
+        version: link:../flatthoughts
       '@flatspace/shared':
         specifier: workspace:*
         version: link:../shared

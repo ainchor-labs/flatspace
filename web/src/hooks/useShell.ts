@@ -19,7 +19,9 @@ export function useShell(user: User) {
     ? "flatdeck"
     : location.pathname.startsWith("/flatdrive")
       ? "flatdrive"
-      : "flatfile";
+      : location.pathname.startsWith("/flatthoughts")
+        ? "flatthoughts"
+        : "flatfile";
 
   return {
     search,

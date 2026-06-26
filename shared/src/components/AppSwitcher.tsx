@@ -5,7 +5,7 @@
  * callback so this stays decoupled from any router.
  */
 
-import { FileText, HardDrive, Presentation } from "lucide-react";
+import { FileText, HardDrive, Lightbulb, Presentation } from "lucide-react";
 import type { AppId } from "../types/index.ts";
 import { cn } from "../lib/cn.ts";
 
@@ -13,6 +13,7 @@ const APPS: { id: AppId; label: string; icon: typeof FileText }[] = [
   { id: "flatfile", label: "Flatfile", icon: FileText },
   { id: "flatdeck", label: "Flatdeck", icon: Presentation },
   { id: "flatdrive", label: "Flatdrive", icon: HardDrive },
+  { id: "flatthoughts", label: "Flatthoughts", icon: Lightbulb },
 ];
 
 export function AppSwitcher({

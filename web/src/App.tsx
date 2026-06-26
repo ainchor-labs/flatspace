@@ -13,6 +13,7 @@ import { AuthScreen, Logo } from "@flatspace/shared/ui";
 import { FlatfilePage } from "./pages/FlatfilePage.tsx";
 import { FlatdeckPage } from "./pages/FlatdeckPage.tsx";
 import { FlatdrivePage } from "./pages/FlatdrivePage.tsx";
+import { FlatthoughtsPage } from "./pages/FlatthoughtsPage.tsx";
 import { AdminUsersPage } from "./pages/AdminUsersPage.tsx";
 import { SettingsPage } from "./pages/SettingsPage.tsx";
 import { SearchResultsPage } from "./pages/SearchResultsPage.tsx";
@@ -31,6 +32,17 @@ const DeckEditorPage = lazy(() =>
 // The file preview pulls in highlight.js — lazy-load it only on the preview route.
 const FilePreviewPage = lazy(() =>
   import("./pages/FilePreviewPage.tsx").then((m) => ({ default: m.FilePreviewPage })),
+);
+
+// The thought editor/compose/triage surfaces pull in markdown-it — lazy-load them.
+const ThoughtEditorPage = lazy(() =>
+  import("./pages/ThoughtEditorPage.tsx").then((m) => ({ default: m.ThoughtEditorPage })),
+);
+const NewThoughtPage = lazy(() =>
+  import("./pages/NewThoughtPage.tsx").then((m) => ({ default: m.NewThoughtPage })),
+);
+const ThoughtTriagePage = lazy(() =>
+  import("./pages/ThoughtTriagePage.tsx").then((m) => ({ default: m.ThoughtTriagePage })),
 );
 
 function EditorLoading() {
@@ -82,6 +94,31 @@ export function App() {
         }
       />
       <Route path="/flatdrive" element={<FlatdrivePage user={user} />} />
+      <Route path="/flatthoughts" element={<FlatthoughtsPage user={user} />} />
+      <Route
+        path="/flatthoughts/new"
+        element={
+          <Suspense fallback={<EditorLoading />}>
+            <NewThoughtPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path="/flatthoughts/triage"
+        element={
+          <Suspense fallback={<EditorLoading />}>
+            <ThoughtTriagePage />
+          </Suspense>
+        }
+      />
+      <Route
+        path="/flatthoughts/thought/:id"
+        element={
+          <Suspense fallback={<EditorLoading />}>
+            <ThoughtEditorPage />
+          </Suspense>
+        }
+      />
       <Route path="/admin/users" element={<AdminUsersPage user={user} />} />
       <Route path="/settings" element={<SettingsPage user={user} />} />
       <Route path="/search" element={<SearchResultsPage user={user} />} />

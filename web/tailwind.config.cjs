@@ -15,5 +15,7 @@ module.exports = {
     "../shared/src/**/*.{ts,tsx}",
     "../flatfile/client/**/*.{ts,tsx}",
     "../flatdeck/client/**/*.{ts,tsx}",
+    "../flatdrive/client/**/*.{ts,tsx}",
+    "../flatthoughts/client/**/*.{ts,tsx}",
   ],
 };

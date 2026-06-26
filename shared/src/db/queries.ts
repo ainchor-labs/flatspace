@@ -15,6 +15,7 @@ import type {
   DriveFolder,
   FileItem,
   Folder,
+  Thought,
   User,
   UserRole,
   UserRow,
@@ -670,5 +671,120 @@ export const files = {
       size: r.size,
       storageKey: r.storage_key,
     }));
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/* Flatthoughts: quick notes                                          */
+/* ------------------------------------------------------------------ */
+
+interface ThoughtRecord {
+  id: number;
+  title: string;
+  content: string;
+  owner_id: number;
+  reviewed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function toThought(r: ThoughtRecord): Thought {
+  return {
+    id: r.id,
+    title: r.title,
+    content: r.content,
+    ownerId: r.owner_id,
+    reviewedAt: r.reviewed_at,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
+export const thoughts = {
+  get(id: number, db: DB = getDb()): Thought | null {
+    const row = db.prepare("SELECT * FROM thoughts WHERE id = ?").get(id) as
+      | ThoughtRecord
+      | undefined;
+    return row ? toThought(row) : null;
+  },
+
+  /** All of a user's thoughts, most-recently-updated first. */
+  listForUser(ownerId: number, db: DB = getDb()): Thought[] {
+    const rows = db
+      .prepare("SELECT * FROM thoughts WHERE owner_id = ? ORDER BY updated_at DESC")
+      .all(ownerId) as ThoughtRecord[];
+    return rows.map(toThought);
+  },
+
+  /**
+   * The triage (swipe) deck: least-recently-reviewed first (never-reviewed lead),
+   * tie-broken by oldest creation — so stale thoughts surface for keep/toss.
+   */
+  forReview(ownerId: number, db: DB = getDb()): Thought[] {
+    const rows = db
+      .prepare(
+        `SELECT * FROM thoughts WHERE owner_id = ?
+         ORDER BY reviewed_at IS NOT NULL, reviewed_at ASC, created_at ASC`,
+      )
+      .all(ownerId) as ThoughtRecord[];
+    return rows.map(toThought);
+  },
+
+  search(ownerId: number, term: string, db: DB = getDb()): Thought[] {
+    const like = `%${term}%`;
+    const rows = db
+      .prepare(
+        `SELECT * FROM thoughts
+         WHERE owner_id = ? AND (title LIKE ? OR content LIKE ?)
+         ORDER BY updated_at DESC`,
+      )
+      .all(ownerId, like, like) as ThoughtRecord[];
+    return rows.map(toThought);
+  },
+
+  create(
+    input: { ownerId: number; title?: string; content?: string },
+    db: DB = getDb(),
+  ): Thought {
+    const info = db
+      .prepare("INSERT INTO thoughts (title, content, owner_id) VALUES (?, ?, ?)")
+      .run(input.title ?? "", input.content ?? "", input.ownerId);
+    const created = this.get(Number(info.lastInsertRowid), db);
+    if (!created) throw new Error("Failed to load thought after insert");
+    return created;
+  },
+
+  /** Update title and/or content; always bumps updated_at. */
+  update(
+    id: number,
+    fields: { title?: string; content?: string },
+    db: DB = getDb(),
+  ): Thought | null {
+    const sets: string[] = [];
+    const params: unknown[] = [];
+    if (fields.title !== undefined) {
+      sets.push("title = ?");
+      params.push(fields.title);
+    }
+    if (fields.content !== undefined) {
+      sets.push("content = ?");
+      params.push(fields.content);
+    }
+    if (sets.length > 0) {
+      sets.push("updated_at = datetime('now')");
+      params.push(id);
+      db.prepare(`UPDATE thoughts SET ${sets.join(", ")} WHERE id = ?`).run(...params);
+    }
+    return this.get(id, db);
+  },
+
+  /** Stamp reviewed_at — called when a thought is "kept" in triage mode. */
+  markReviewed(id: number, db: DB = getDb()): Thought | null {
+    db.prepare("UPDATE thoughts SET reviewed_at = datetime('now') WHERE id = ?").run(id);
+    return this.get(id, db);
+  },
+
+  remove(id: number, db: DB = getDb()): void {
+    db.prepare("DELETE FROM thoughts WHERE id = ?").run(id);
   },
 };

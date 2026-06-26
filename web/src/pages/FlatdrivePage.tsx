@@ -40,6 +40,7 @@ export function FlatdrivePage({ user }: { user: User }) {
         registerUpload={(fn) => (uploadTrigger.current = fn)}
         onNewFlatfile={async () => navigate(`/flatfile/doc/${(await createDoc.mutateAsync({})).id}`)}
         onNewFlatdeck={async () => navigate(`/flatdeck/deck/${(await createDeck.mutateAsync({})).id}`)}
+        onNewFlatthought={() => navigate("/flatthoughts/new")}
       />
     </AppShell>
   );

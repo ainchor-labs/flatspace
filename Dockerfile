@@ -22,6 +22,7 @@ COPY shared/package.json   shared/package.json
 COPY flatfile/package.json flatfile/package.json
 COPY flatdeck/package.json flatdeck/package.json
 COPY flatdrive/package.json flatdrive/package.json
+COPY flatthoughts/package.json flatthoughts/package.json
 COPY server/package.json   server/package.json
 COPY web/package.json      web/package.json
 RUN pnpm install --frozen-lockfile

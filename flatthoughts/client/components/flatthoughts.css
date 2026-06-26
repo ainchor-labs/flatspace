@@ -1,0 +1,132 @@
+/**
+ * Flatthoughts styles: rendered-markdown ("prose") preview + triage swipe motion.
+ * Scoped to .ft-prose / .ft-* so they never leak into the rest of the suite.
+ */
+
+.ft-prose {
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: hsl(var(--foreground));
+  word-break: break-word;
+}
+.ft-prose > :first-child {
+  margin-top: 0;
+}
+.ft-prose > :last-child {
+  margin-bottom: 0;
+}
+.ft-prose h1,
+.ft-prose h2,
+.ft-prose h3,
+.ft-prose h4 {
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 1.2em 0 0.5em;
+}
+.ft-prose h1 {
+  font-size: 1.5em;
+}
+.ft-prose h2 {
+  font-size: 1.3em;
+}
+.ft-prose h3 {
+  font-size: 1.12em;
+}
+.ft-prose p {
+  margin: 0.6em 0;
+}
+.ft-prose ul,
+.ft-prose ol {
+  margin: 0.6em 0;
+  padding-left: 1.4em;
+}
+.ft-prose ul {
+  list-style: disc;
+}
+.ft-prose ol {
+  list-style: decimal;
+}
+.ft-prose li {
+  margin: 0.2em 0;
+}
+.ft-prose a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.ft-prose blockquote {
+  margin: 0.8em 0;
+  padding-left: 0.9em;
+  border-left: 3px solid hsl(var(--border));
+  color: hsl(var(--muted-foreground));
+}
+.ft-prose code {
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 0.85em;
+  background: hsl(var(--muted));
+  padding: 0.12em 0.35em;
+  border-radius: 4px;
+}
+.ft-prose pre {
+  margin: 0.8em 0;
+  padding: 0.85em 1em;
+  background: hsl(var(--muted));
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.ft-prose pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.85em;
+}
+.ft-prose hr {
+  margin: 1.2em 0;
+  border: none;
+  border-top: 1px solid hsl(var(--border));
+}
+.ft-prose img {
+  max-width: 100%;
+  border-radius: 8px;
+}
+.ft-prose table {
+  border-collapse: collapse;
+  margin: 0.8em 0;
+}
+.ft-prose th,
+.ft-prose td {
+  border: 1px solid hsl(var(--border));
+  padding: 0.4em 0.6em;
+}
+
+/* Triage card swipe-away animations. */
+@keyframes ft-swipe-right {
+  to {
+    transform: translateX(140%) rotate(14deg);
+    opacity: 0;
+  }
+}
+@keyframes ft-swipe-left {
+  to {
+    transform: translateX(-140%) rotate(-14deg);
+    opacity: 0;
+  }
+}
+.ft-leaving-right {
+  animation: ft-swipe-right 0.32s ease-in forwards;
+}
+.ft-leaving-left {
+  animation: ft-swipe-left 0.32s ease-in forwards;
+}
+@keyframes ft-card-in {
+  from {
+    transform: scale(0.96) translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+.ft-card-in {
+  animation: ft-card-in 0.22s ease-out;
+}

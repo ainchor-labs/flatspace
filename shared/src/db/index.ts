@@ -15,6 +15,7 @@ export {
   versions,
   driveFolders,
   files,
+  thoughts,
   toPublicUser,
   type FileLocation,
 } from "./queries.ts";

@@ -23,6 +23,7 @@ import { attachRealtime } from "@flatspace/shared/sockets";
 import { flatfileRoutes } from "@flatspace/flatfile/server";
 import { flatdeckRoutes } from "@flatspace/flatdeck/server";
 import { flatdriveRoutes } from "@flatspace/flatdrive/server";
+import { flatthoughtsRoutes } from "@flatspace/flatthoughts/server";
 import { adminRoutes } from "./admin-routes.ts";
 import { runStartupChecks } from "./startup-checks.ts";
 
@@ -60,6 +61,7 @@ async function main(): Promise<void> {
   await app.register(flatfileRoutes, { prefix: "/api/flatfile" });
   await app.register(flatdeckRoutes, { prefix: "/api/flatdeck" });
   await app.register(flatdriveRoutes, { prefix: "/api/flatdrive" });
+  await app.register(flatthoughtsRoutes, { prefix: "/api/flatthoughts" });
 
   // 5. Serve the built SPA in production (dev uses Vite + proxy)
   const webDist = resolve(__dirname, "../../web/dist");

@@ -1,14 +1,15 @@
 /**
- * Global search results (/search?q=) — spans Flatfile documents and Flatdrive
- * files. Reached by pressing Enter in the top-bar search box.
+ * Global search results (/search?q=) — spans Flatfile documents, Flatdrive files,
+ * and Flatthoughts notes. Reached by pressing Enter in the top-bar search box.
  */
 
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { FileText, HardDrive, Search } from "lucide-react";
+import { FileText, HardDrive, Lightbulb, Search } from "lucide-react";
 import { AppShell } from "@flatspace/shared/ui";
 import type { User } from "@flatspace/shared/types";
 import { useSearchDocuments } from "@flatspace/flatfile/client";
 import { useSearchFiles } from "@flatspace/flatdrive/client";
+import { thoughtTitle, useSearchThoughts } from "@flatspace/flatthoughts/client";
 import { useShell } from "../hooks/useShell.ts";
 
 export function SearchResultsPage({ user }: { user: User }) {
@@ -19,11 +20,13 @@ export function SearchResultsPage({ user }: { user: User }) {
 
   const docs = useSearchDocuments(q);
   const files = useSearchFiles(q);
+  const thoughts = useSearchThoughts(q);
 
   const docResults = docs.data ?? [];
   const fileResults = files.data ?? [];
-  const loading = docs.isLoading || files.isLoading;
-  const total = docResults.length + fileResults.length;
+  const thoughtResults = thoughts.data ?? [];
+  const loading = docs.isLoading || files.isLoading || thoughts.isLoading;
+  const total = docResults.length + fileResults.length + thoughtResults.length;
 
   return (
     <AppShell {...shell}>
@@ -38,7 +41,9 @@ export function SearchResultsPage({ user }: { user: User }) {
         {!loading && total === 0 && (
           <div className="mt-10 flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-16 text-center">
             <Search className="mb-3 size-6 text-muted-foreground/50" />
-            <p className="text-sm text-muted-foreground">No documents or files match “{q}”.</p>
+            <p className="text-sm text-muted-foreground">
+              No documents, files, or thoughts match “{q}”.
+            </p>
           </div>
         )}
 
@@ -84,6 +89,33 @@ export function SearchResultsPage({ user }: { user: User }) {
                   <HardDrive />
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">{f.name}</span>
                   <span className="text-xs text-muted-foreground">{f.mime}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {thoughtResults.length > 0 && (
+          <section className="mt-6">
+            <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Thoughts
+            </h2>
+            <div className="overflow-hidden rounded-xl border border-border">
+              {thoughtResults.map((t, i) => (
+                <button
+                  key={t.id}
+                  onClick={() => navigate(`/flatthoughts/thought/${t.id}`)}
+                  className={`flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-accent [&_svg]:size-4 [&_svg]:text-primary/70 ${
+                    i > 0 ? "border-t border-border" : ""
+                  }`}
+                >
+                  <Lightbulb />
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                    {thoughtTitle(t)}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(t.updatedAt.replace(" ", "T") + "Z").toLocaleDateString()}
+                  </span>
                 </button>
               ))}
             </div>
