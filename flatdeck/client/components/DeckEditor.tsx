@@ -223,11 +223,11 @@ function DeckSurface({
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
       {/* Top chrome */}
-      <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-3">
+      <header className="flex h-12 shrink-0 items-center gap-2 overflow-x-auto border-b border-border px-3">
         <button
           onClick={onBack}
           aria-label="Back"
-          className="rounded-md p-2 text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-4"
+          className="shrink-0 rounded-md p-2 text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-4"
         >
           <ArrowLeft />
         </button>
@@ -235,18 +235,18 @@ function DeckSurface({
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
           placeholder="Untitled deck"
-          className="min-w-0 flex-1 truncate bg-transparent px-1 text-sm font-medium outline-none placeholder:text-muted-foreground"
+          className="min-w-[6rem] flex-1 truncate bg-transparent px-1 text-sm font-medium outline-none placeholder:text-muted-foreground"
         />
 
-        <span className="mr-1 text-xs text-muted-foreground">
+        <span className="mr-1 hidden text-xs text-muted-foreground sm:inline">
           {status === "saving" ? "Saving…" : status === "saved" ? "Saved" : status === "error" ? "Save failed" : ""}
         </span>
 
         {/* Layout picker (current slide) */}
         <Menu>
           <MenuTrigger>
-            <span className="flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5">
-              <LayoutTemplate /> {LAYOUTS.find((l) => l.id === layout)?.label ?? "Layout"}
+            <span className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5">
+              <LayoutTemplate /> <span className="hidden sm:inline">{LAYOUTS.find((l) => l.id === layout)?.label ?? "Layout"}</span>
             </span>
           </MenuTrigger>
           <MenuContent align="end">
@@ -262,8 +262,8 @@ function DeckSurface({
         {/* Theme picker (deck) */}
         <Menu>
           <MenuTrigger>
-            <span className="flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5">
-              <Palette /> {THEMES.find((t) => t.id === content.theme)?.label ?? "Theme"}
+            <span className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5">
+              <Palette /> <span className="hidden sm:inline">{THEMES.find((t) => t.id === content.theme)?.label ?? "Theme"}</span>
             </span>
           </MenuTrigger>
           <MenuContent align="end">
@@ -279,8 +279,8 @@ function DeckSurface({
         {/* Transition picker (deck) */}
         <Menu>
           <MenuTrigger>
-            <span className="flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5">
-              <ArrowLeftRight /> {TRANSITIONS.find((t) => t.id === content.transition)?.label ?? "None"}
+            <span className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5">
+              <ArrowLeftRight /> <span className="hidden sm:inline">{TRANSITIONS.find((t) => t.id === content.transition)?.label ?? "None"}</span>
             </span>
           </MenuTrigger>
           <MenuContent align="end">
@@ -299,8 +299,8 @@ function DeckSurface({
           current={deck.tags}
           align="end"
           trigger={
-            <span className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5">
-              <TagIcon /> {deck.tags.length > 0 ? deck.tags.length : "Tags"}
+            <span className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5">
+              <TagIcon /> {deck.tags.length > 0 ? deck.tags.length : <span className="hidden sm:inline">Tags</span>}
             </span>
           }
         />
@@ -308,9 +308,9 @@ function DeckSurface({
         <button
           onClick={() => fileRef.current?.click()}
           aria-label="Insert image"
-          className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5"
+          className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5"
         >
-          <ImageIcon /> Image
+          <ImageIcon /> <span className="hidden sm:inline">Image</span>
         </button>
         <input
           ref={fileRef}
@@ -326,23 +326,24 @@ function DeckSurface({
         <button
           onClick={() => setShowPresent(true)}
           aria-label="Present"
-          className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5"
+          className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5"
         >
-          <Play /> Present
+          <Play /> <span className="hidden sm:inline">Present</span>
         </button>
 
         <button
           onClick={() => setShowExport(true)}
           aria-label="Export deck"
-          className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5"
+          className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5"
         >
-          <FileDown /> Export
+          <FileDown /> <span className="hidden sm:inline">Export</span>
         </button>
       </header>
 
-      {/* Body */}
-      <div className="flex min-h-0 flex-1">
-        <aside className="w-56 shrink-0 border-r border-border bg-card/30">
+      {/* Body — three panes side by side on desktop; stacked on mobile
+          (slide strip, then editor, then preview). */}
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <aside className="max-h-40 shrink-0 overflow-y-auto border-b border-border bg-card/30 md:max-h-none md:w-56 md:border-b-0 md:border-r">
           <SlideNavigator
             slides={content.slides}
             theme={content.theme}
@@ -355,8 +356,8 @@ function DeckSurface({
           />
         </aside>
 
-        <main className="flex min-w-0 flex-1">
-          <div className="flex w-1/2 flex-col border-r border-border">
+        <main className="flex min-w-0 flex-1 flex-col md:flex-row">
+          <div className="flex min-h-0 w-full flex-col border-r border-border md:w-1/2">
             <textarea
               ref={textareaRef}
               value={slide.markdown}
@@ -378,7 +379,7 @@ function DeckSurface({
               />
             </div>
           </div>
-          <div className="flex w-1/2 items-center justify-center bg-muted/20 p-6">
+          <div className="flex w-full items-center justify-center bg-muted/20 p-4 md:w-1/2 md:p-6">
             <div className="w-full overflow-hidden rounded-lg shadow-2xl">
               <SlideView slide={slide} theme={content.theme} />
             </div>

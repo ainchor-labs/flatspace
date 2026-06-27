@@ -101,7 +101,11 @@ function EditorSurface({
 }) {
   const [title, setTitle] = useState(doc.title);
   const [settings, setSettings] = useState<DocumentSettings>(doc.settings);
-  const [showOutline, setShowOutline] = useState(true);
+  // Outline starts open on desktop, collapsed on phones (where it would eat the
+  // narrow content column).
+  const [showOutline, setShowOutline] = useState(
+    () => typeof window === "undefined" || window.innerWidth >= 768,
+  );
   const [showFind, setShowFind] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -252,22 +256,22 @@ function EditorSurface({
           aria-label="Find and replace"
           className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5"
         >
-          <Search /> Find
+          <Search /> <span className="hidden sm:inline">Find</span>
         </button>
         <button
           onClick={() => setShowHistory(true)}
           aria-label="Version history"
           className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5"
         >
-          <History /> History
+          <History /> <span className="hidden sm:inline">History</span>
         </button>
         <button
           onClick={() => setShowGuide(true)}
           aria-label="Markdown reference"
           title="Markdown formatting reference"
-          className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5"
+          className="hidden items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground sm:flex [&_svg]:size-3.5"
         >
-          <BookText /> Markdown
+          <BookText /> <span className="hidden sm:inline">Markdown</span>
         </button>
         <TagPicker
           entityType="document"
@@ -276,7 +280,7 @@ function EditorSurface({
           align="end"
           trigger={
             <span className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5">
-              <TagIcon /> {doc.tags.length > 0 ? doc.tags.length : "Tags"}
+              <TagIcon /> {doc.tags.length > 0 ? doc.tags.length : <span className="hidden sm:inline">Tags</span>}
             </span>
           }
         />
@@ -284,7 +288,7 @@ function EditorSurface({
         <Menu>
           <MenuTrigger>
             <span className="flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5">
-              <FileDown /> Export
+              <FileDown /> <span className="hidden sm:inline">Export</span>
             </span>
           </MenuTrigger>
           <MenuContent align="end">
