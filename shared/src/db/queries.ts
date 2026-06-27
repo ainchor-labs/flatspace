@@ -8,6 +8,7 @@
 import type { DB } from "./connection.ts";
 import { getDb } from "./connection.ts";
 import type {
+  ApiKey,
   AppId,
   Document,
   DocumentSettings,
@@ -951,6 +952,78 @@ export const tags = {
   /** Delete a tag; ON DELETE CASCADE removes its taggings. */
   remove(id: number, db: DB = getDb()): void {
     db.prepare("DELETE FROM tags WHERE id = ?").run(id);
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/* API keys (programmatic access tokens)                              */
+/* ------------------------------------------------------------------ */
+
+interface ApiKeyRecord {
+  id: number;
+  owner_id: number;
+  name: string;
+  key_hash: string;
+  prefix: string;
+  last_used_at: string | null;
+  created_at: string;
+}
+
+function toApiKey(r: ApiKeyRecord): ApiKey {
+  return {
+    id: r.id,
+    ownerId: r.owner_id,
+    name: r.name,
+    prefix: r.prefix,
+    lastUsedAt: r.last_used_at,
+    createdAt: r.created_at,
+  };
+}
+
+export const apiKeys = {
+  get(id: number, db: DB = getDb()): ApiKey | null {
+    const row = db.prepare("SELECT * FROM api_keys WHERE id = ?").get(id) as
+      | ApiKeyRecord
+      | undefined;
+    return row ? toApiKey(row) : null;
+  },
+
+  /** A user's keys, newest first (never includes the hash/secret). */
+  listForUser(ownerId: number, db: DB = getDb()): ApiKey[] {
+    const rows = db
+      .prepare("SELECT * FROM api_keys WHERE owner_id = ? ORDER BY created_at DESC, id DESC")
+      .all(ownerId) as ApiKeyRecord[];
+    return rows.map(toApiKey);
+  },
+
+  /** Resolve the owning user id from a key's SHA-256 hash (for bearer auth). */
+  ownerByHash(keyHash: string, db: DB = getDb()): number | null {
+    const row = db.prepare("SELECT id, owner_id FROM api_keys WHERE key_hash = ?").get(keyHash) as
+      | { id: number; owner_id: number }
+      | undefined;
+    if (!row) return null;
+    return row.owner_id;
+  },
+
+  /** Stamp last_used_at — called on each successful authenticated request. */
+  touchByHash(keyHash: string, db: DB = getDb()): void {
+    db.prepare("UPDATE api_keys SET last_used_at = datetime('now') WHERE key_hash = ?").run(keyHash);
+  },
+
+  create(
+    input: { ownerId: number; name: string; keyHash: string; prefix: string },
+    db: DB = getDb(),
+  ): ApiKey {
+    const info = db
+      .prepare("INSERT INTO api_keys (owner_id, name, key_hash, prefix) VALUES (?, ?, ?, ?)")
+      .run(input.ownerId, input.name, input.keyHash, input.prefix);
+    const created = this.get(Number(info.lastInsertRowid), db);
+    if (!created) throw new Error("Failed to load api key after insert");
+    return created;
+  },
+
+  remove(id: number, db: DB = getDb()): void {
+    db.prepare("DELETE FROM api_keys WHERE id = ?").run(id);
   },
 };
 

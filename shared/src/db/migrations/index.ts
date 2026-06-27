@@ -200,4 +200,27 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    id: 7,
+    name: "api_keys",
+    up: (db) => {
+      // Per-user API keys for the programmatic REST API (/api/v1/*). The raw key
+      // is shown once at creation and never stored — only a SHA-256 hash lives
+      // here (key_hash, unique for O(1) bearer lookup). `prefix` is a short,
+      // non-secret slice of the key kept for display so a user can tell their
+      // keys apart and revoke the right one. `last_used_at` is bumped on use.
+      db.exec(`
+        CREATE TABLE api_keys (
+          id           INTEGER PRIMARY KEY AUTOINCREMENT,
+          owner_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          name         TEXT NOT NULL DEFAULT 'API key',
+          key_hash     TEXT NOT NULL UNIQUE,
+          prefix       TEXT NOT NULL,
+          last_used_at TEXT,
+          created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX idx_api_keys_owner ON api_keys(owner_id);
+      `);
+    },
+  },
 ];

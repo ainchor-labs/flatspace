@@ -183,6 +183,29 @@ export interface Thought {
 }
 
 /* ------------------------------------------------------------------ */
+/* API keys (programmatic access to /api/v1)                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A personal access token for the REST API. The secret itself is never stored
+ * or returned after creation — only `prefix` (a short, non-secret slice) is kept
+ * so the owner can identify a key in the list and revoke it.
+ */
+export interface ApiKey {
+  id: number;
+  ownerId: number;
+  name: string;
+  prefix: string;
+  lastUsedAt: string | null;
+  createdAt: string;
+}
+
+/** Returned exactly once, at creation time: the full key in `key`. Store it now. */
+export interface ApiKeyWithSecret extends ApiKey {
+  key: string;
+}
+
+/* ------------------------------------------------------------------ */
 /* Auth DTOs                                                           */
 /* ------------------------------------------------------------------ */
 

@@ -3,4 +3,4 @@
  */
 
 export { flatdriveRoutes } from "./routes.ts";
-export { deleteBlob } from "./storage.ts";
+export { deleteBlob, saveStream, filePath, FileTooLargeError } from "./storage.ts";

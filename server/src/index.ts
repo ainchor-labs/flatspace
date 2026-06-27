@@ -26,6 +26,8 @@ import { flatdriveRoutes } from "@flatspace/flatdrive/server";
 import { flatthoughtsRoutes } from "@flatspace/flatthoughts/server";
 import { adminRoutes } from "./admin-routes.ts";
 import { tagsRoutes } from "./tags-routes.ts";
+import { keysRoutes } from "./keys-routes.ts";
+import { apiV1Routes } from "./api/v1-routes.ts";
 import { runStartupChecks } from "./startup-checks.ts";
 
 const PORT = Number(process.env.PORT ?? 7532);
@@ -60,10 +62,14 @@ async function main(): Promise<void> {
   await app.register(authRoutes, { prefix: "/api/auth" });
   await app.register(adminRoutes, { prefix: "/api/admin" });
   await app.register(tagsRoutes, { prefix: "/api/tags" });
+  await app.register(keysRoutes, { prefix: "/api" });
   await app.register(flatfileRoutes, { prefix: "/api/flatfile" });
   await app.register(flatdeckRoutes, { prefix: "/api/flatdeck" });
   await app.register(flatdriveRoutes, { prefix: "/api/flatdrive" });
   await app.register(flatthoughtsRoutes, { prefix: "/api/flatthoughts" });
+
+  // Programmatic REST API (API-key auth via Authorization: Bearer <key>).
+  await app.register(apiV1Routes, { prefix: "/api/v1" });
 
   // 5. Serve the built SPA in production (dev uses Vite + proxy)
   const webDist = resolve(__dirname, "../../web/dist");

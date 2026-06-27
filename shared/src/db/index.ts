@@ -18,6 +18,7 @@ export {
   thoughts,
   tags,
   taggings,
+  apiKeys,
   toPublicUser,
   type FileLocation,
 } from "./queries.ts";

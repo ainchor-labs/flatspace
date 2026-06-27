@@ -11,9 +11,10 @@
 import cookie from "@fastify/cookie";
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest, preHandlerHookHandler } from "fastify";
 import fp from "fastify-plugin";
-import { users, toPublicUser } from "../db/queries.ts";
+import { users, apiKeys, toPublicUser } from "../db/queries.ts";
 import type { User, UserRole } from "../types/index.ts";
 import { verifyToken } from "./jwt.ts";
+import { hashApiKey } from "./apikey.ts";
 
 export const AUTH_COOKIE = "flatspace_token";
 
@@ -23,8 +24,18 @@ declare module "fastify" {
   }
   interface FastifyInstance {
     authGuard: preHandlerHookHandler;
+    apiKeyGuard: preHandlerHookHandler;
     requireRole: (role: UserRole) => preHandlerHookHandler;
   }
+}
+
+/** Pull the bearer token out of an Authorization header, or null. */
+function bearerToken(request: FastifyRequest): string | null {
+  const header = request.headers.authorization;
+  if (!header) return null;
+  const [scheme, value] = header.split(" ");
+  if (scheme?.toLowerCase() !== "bearer" || !value) return null;
+  return value.trim() || null;
 }
 
 function unauthorized(reply: FastifyReply): void {
@@ -52,6 +63,21 @@ const plugin: FastifyPluginAsync = async (app) => {
 
   app.decorate("authGuard", async (request: FastifyRequest, reply: FastifyReply) => {
     if (!request.user) unauthorized(reply);
+  });
+
+  // Bearer-token guard for the programmatic API (/api/v1). Independent of the
+  // cookie: it resolves the user strictly from the Authorization header's API
+  // key, so scripts authenticate the same way regardless of any browser session.
+  app.decorate("apiKeyGuard", async (request: FastifyRequest, reply: FastifyReply) => {
+    const token = bearerToken(request);
+    if (!token) return unauthorized(reply);
+    const hash = hashApiKey(token);
+    const ownerId = apiKeys.ownerByHash(hash);
+    if (ownerId === null) return unauthorized(reply);
+    const row = users.findById(ownerId);
+    if (!row) return unauthorized(reply);
+    request.user = toPublicUser(row);
+    apiKeys.touchByHash(hash);
   });
 
   app.decorate("requireRole", (role: UserRole): preHandlerHookHandler => {
