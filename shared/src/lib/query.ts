@@ -16,6 +16,8 @@ import {
 } from "@tanstack/react-query";
 import { api, ApiRequestError } from "./api.ts";
 import type {
+  ApiKey,
+  ApiKeyWithSecret,
   AuthResponse,
   Credentials,
   Tag,
@@ -213,6 +215,39 @@ export function useSetEntityTags(): UseMutationResult<
   return useMutation({
     mutationFn: (input) => api.put<Tag[]>("/tags/entity", input),
     onSuccess: () => invalidateTagged(qc),
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* API keys (personal access tokens for /api/v1)                      */
+/* ------------------------------------------------------------------ */
+
+export const apiKeyKeys = {
+  all: ["api-keys"] as const,
+};
+
+/** The current user's API keys (prefixes + metadata only — never the secret). */
+export function useApiKeys(): UseQueryResult<ApiKey[]> {
+  return useQuery({
+    queryKey: apiKeyKeys.all,
+    queryFn: () => api.get<ApiKey[]>("/keys"),
+  });
+}
+
+/** Mint a new key. The full secret rides back in `key` exactly once. */
+export function useCreateApiKey(): UseMutationResult<ApiKeyWithSecret, Error, { name?: string }> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input) => api.post<ApiKeyWithSecret>("/keys", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: apiKeyKeys.all }),
+  });
+}
+
+export function useDeleteApiKey(): UseMutationResult<void, Error, number> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.delete<void>(`/keys/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: apiKeyKeys.all }),
   });
 }
 

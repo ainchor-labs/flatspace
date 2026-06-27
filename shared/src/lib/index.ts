@@ -23,4 +23,8 @@ export {
   useUpdateTag,
   useDeleteTag,
   useSetEntityTags,
+  apiKeyKeys,
+  useApiKeys,
+  useCreateApiKey,
+  useDeleteApiKey,
 } from "./query.ts";
