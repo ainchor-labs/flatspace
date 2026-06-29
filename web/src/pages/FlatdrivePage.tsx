@@ -44,6 +44,15 @@ export function FlatdrivePage({ user }: { user: User }) {
         flatView={flatView}
         onOpenFolder={(id) => setView({ folderId: id })}
         onOpenFile={(id) => navigate(`/flatdrive/file/${id}`)}
+        onOpenAppItem={(item) =>
+          navigate(
+            item.kind === "flatfile"
+              ? `/flatfile/doc/${item.id}`
+              : item.kind === "flatdeck"
+                ? `/flatdeck/deck/${item.id}`
+                : `/flatthoughts/thought/${item.id}`,
+          )
+        }
         registerUpload={(fn) => (uploadTrigger.current = fn)}
         onNewFlatfile={async () => navigate(`/flatfile/doc/${(await createDoc.mutateAsync({})).id}`)}
         onNewFlatdeck={async () => navigate(`/flatdeck/deck/${(await createDeck.mutateAsync({})).id}`)}

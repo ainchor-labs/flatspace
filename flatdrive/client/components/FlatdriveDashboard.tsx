@@ -31,7 +31,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import type { DriveFolder, FileItem, Tag } from "@flatspace/shared/types";
+import type { DriveAppItem, DriveFolder, FileItem, Tag } from "@flatspace/shared/types";
 import {
   Button,
   Menu,
@@ -101,11 +101,63 @@ function sortFiles(files: FileItem[], key: SortKey): FileItem[] {
   return copy;
 }
 
+/** Icon + type label for a cross-app item. */
+function appItemMeta(kind: DriveAppItem["kind"]) {
+  if (kind === "flatdeck") return { Icon: Presentation, label: "Deck" };
+  if (kind === "flatthought") return { Icon: Lightbulb, label: "Note" };
+  return { Icon: FileText, label: "Document" };
+}
+
+/** Grid card for a doc/deck/note. Open-only — managed in its own app. */
+function AppItemCard({ item, onOpen }: { item: DriveAppItem; onOpen: () => void }) {
+  const { Icon, label } = appItemMeta(item.kind);
+  return (
+    <button
+      onClick={onOpen}
+      title={`Open in ${label === "Document" ? "Flatfile" : label === "Deck" ? "Flatdeck" : "Flatthoughts"}`}
+      className="group relative flex h-36 flex-col rounded-xl border border-border bg-card p-3 text-left transition hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5"
+    >
+      <div className="flex flex-1 items-center justify-center [&_svg]:size-10 [&_svg]:text-primary/70">
+        <Icon />
+      </div>
+      <div className="min-w-0">
+        <div className="truncate text-sm font-medium">{item.name || "Untitled"}</div>
+        <div className="text-xs text-muted-foreground">
+          {label} · {formatDate(item.updatedAt)}
+        </div>
+        {item.tags.length > 0 && <TagChips tags={item.tags} max={2} className="mt-1 flex-nowrap" />}
+      </div>
+    </button>
+  );
+}
+
+/** List row for a doc/deck/note. */
+function AppItemRow({ item, onOpen, first }: { item: DriveAppItem; onOpen: () => void; first: boolean }) {
+  const { Icon, label } = appItemMeta(item.kind);
+  return (
+    <button
+      onClick={onOpen}
+      className={cn(
+        "group flex w-full items-center gap-3 px-3 py-2.5 text-left transition hover:bg-accent [&_svg]:size-4",
+        !first && "border-t border-border",
+      )}
+    >
+      <Icon className="shrink-0 text-primary/70" />
+      <span className="min-w-0 flex-1 truncate text-sm">{item.name || "Untitled"}</span>
+      {item.tags.length > 0 && <TagChips tags={item.tags} max={2} className="hidden shrink-0 sm:flex" />}
+      <span className="shrink-0 text-xs text-muted-foreground">
+        {label} · {formatDate(item.updatedAt)}
+      </span>
+    </button>
+  );
+}
+
 export function FlatdriveDashboard({
   folderId,
   flatView = null,
   onOpenFolder,
   onOpenFile,
+  onOpenAppItem,
   registerUpload,
   onNewFlatfile,
   onNewFlatdeck,
@@ -116,6 +168,8 @@ export function FlatdriveDashboard({
   flatView?: FlatView | null;
   onOpenFolder: (id: number | null) => void;
   onOpenFile: (id: number) => void;
+  /** Open a cross-app item (doc/deck/note) in its originating app. */
+  onOpenAppItem?: (item: DriveAppItem) => void;
   /** Lets a parent (e.g. the sidebar's Upload button) open the file picker. */
   registerUpload?: (open: () => void) => void;
   /** Create a new Flatfile document (wired by the web host) and open it. */
@@ -334,22 +388,32 @@ export function FlatdriveDashboard({
     () => (flatView ? [] : sortFolders(listing?.folders ?? [], sort)),
     [flatView, listing, sort],
   );
-  const rawFiles = flatView ? (flatQuery?.data ?? []) : (listing?.files ?? []);
+  const rawFiles = flatView ? (flatQuery?.data?.files ?? []) : (listing?.files ?? []);
   const sortedFiles = useMemo(() => sortFiles(rawFiles, sort), [rawFiles, sort]);
+  // Cross-app items (docs/decks/notes): root + flat views only.
+  const rawAppItems = flatView ? (flatQuery?.data?.appItems ?? []) : (listing?.appItems ?? []);
+  const matchesTags = (tags: Tag[]) => {
+    if (tagFilter.size === 0) return true;
+    const ids = new Set(tags.map((t) => t.id));
+    return [...tagFilter].every((id) => ids.has(id));
+  };
   // Tag filter applies to files only (folders aren't taggable).
   const files = useMemo(
-    () =>
-      tagFilter.size === 0
-        ? sortedFiles
-        : sortedFiles.filter((f) => {
-            const ids = new Set(f.tags.map((t) => t.id));
-            return [...tagFilter].every((id) => ids.has(id));
-          }),
+    () => sortedFiles.filter((f) => matchesTags(f.tags)),
     [sortedFiles, tagFilter],
   );
+  const appItems = useMemo(() => {
+    const arr = [...rawAppItems].filter((it) => matchesTags(it.tags));
+    arr.sort((a, b) =>
+      sort === "modified" ? b.updatedAt.localeCompare(a.updatedAt) : a.name.localeCompare(b.name),
+    );
+    return arr;
+  }, [rawAppItems, sort, tagFilter]);
   const breadcrumb = listing?.breadcrumb ?? [];
-  const isEmpty = !isLoading && folders.length === 0 && sortedFiles.length === 0;
-  const noFileMatches = tagFilter.size > 0 && files.length === 0 && sortedFiles.length > 0;
+  const isEmpty =
+    !isLoading && folders.length === 0 && sortedFiles.length === 0 && rawAppItems.length === 0;
+  const noFileMatches =
+    tagFilter.size > 0 && files.length === 0 && appItems.length === 0 && (sortedFiles.length > 0 || rawAppItems.length > 0);
   const selCount = selFolders.size + selFiles.size;
 
   return (
@@ -572,6 +636,9 @@ export function FlatdriveDashboard({
               onDelete={() => deleteFileItem(file)}
             />
           ))}
+          {appItems.map((item) => (
+            <AppItemCard key={`${item.kind}-${item.id}`} item={item} onOpen={() => onOpenAppItem?.(item)} />
+          ))}
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-border">
@@ -624,6 +691,14 @@ export function FlatdriveDashboard({
               />
             );
           })}
+          {appItems.map((item, i) => (
+            <AppItemRow
+              key={`${item.kind}-${item.id}`}
+              item={item}
+              first={folders.length === 0 && files.length === 0 && i === 0}
+              onOpen={() => onOpenAppItem?.(item)}
+            />
+          ))}
         </div>
       )}
 

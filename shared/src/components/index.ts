@@ -26,3 +26,4 @@ export { Logo } from "./Logo.tsx";
 export { UserMenu } from "./UserMenu.tsx";
 export { AuthScreen } from "./AuthScreen.tsx";
 export { CommandPalette, type Command } from "./CommandPalette.tsx";
+export { MarkdownLineEditor } from "./MarkdownLineEditor.tsx";

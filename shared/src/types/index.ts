@@ -154,12 +154,34 @@ export interface FileItem {
   updatedAt: string;
 }
 
+/**
+ * A read-only Flatdrive entry that points at content owned by another app
+ * (a Flatfile document, Flatdeck deck, or Flatthoughts note). Surfaced in the
+ * Drive root + flat views; clicking one opens it in its originating app.
+ */
+export interface DriveAppItem {
+  kind: "flatfile" | "flatdeck" | "flatthought";
+  id: number;
+  name: string;
+  starred: boolean;
+  tags: Tag[];
+  updatedAt: string;
+}
+
 /** A Flatdrive folder listing: the folder itself (null = root), its path, and contents. */
 export interface DriveListing {
   folder: DriveFolder | null;
   breadcrumb: DriveFolder[];
   folders: DriveFolder[];
   files: FileItem[];
+  /** Cross-app items (docs/decks/notes). Populated only at the Drive root. */
+  appItems: DriveAppItem[];
+}
+
+/** A flat (cross-folder) Flatdrive listing: real files plus cross-app items. */
+export interface DriveFlatListing {
+  files: FileItem[];
+  appItems: DriveAppItem[];
 }
 
 /* ------------------------------------------------------------------ */

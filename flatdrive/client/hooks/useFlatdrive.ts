@@ -5,7 +5,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@flatspace/shared/lib";
-import type { DriveFolder, DriveListing, FileItem } from "@flatspace/shared/types";
+import type { DriveFlatListing, DriveFolder, DriveListing, FileItem } from "@flatspace/shared/types";
 
 export const flatdriveKeys = {
   browse: (folderId: number | null) => ["flatdrive", "browse", folderId] as const,
@@ -30,20 +30,20 @@ export function useFile(id: number) {
   });
 }
 
-/** Flat list of the user's most recently updated files (across all folders). */
+/** Recently-updated files plus cross-app items (docs/decks/notes). */
 export function useRecentFiles(enabled = true) {
   return useQuery({
     queryKey: ["flatdrive", "recent"],
-    queryFn: () => api.get<FileItem[]>("/flatdrive/recent"),
+    queryFn: () => api.get<DriveFlatListing>("/flatdrive/recent"),
     enabled,
   });
 }
 
-/** Flat list of every file the user has starred. */
+/** Starred files plus starred cross-app items. */
 export function useStarredFiles(enabled = true) {
   return useQuery({
     queryKey: ["flatdrive", "starred"],
-    queryFn: () => api.get<FileItem[]>("/flatdrive/all?starred=true"),
+    queryFn: () => api.get<DriveFlatListing>("/flatdrive/all?starred=true"),
     enabled,
   });
 }

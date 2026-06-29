@@ -172,6 +172,9 @@ importers:
       lucide-react:
         specifier: ^0.469.0
         version: 0.469.0(react@18.3.1)
+      markdown-it:
+        specifier: ^14.2.0
+        version: 14.2.0
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -182,6 +185,9 @@ importers:
         specifier: ^0.8.10
         version: 0.8.10(@tiptap/core@2.27.2(@tiptap/pm@2.27.2))
     devDependencies:
+      '@types/markdown-it':
+        specifier: ^14.1.2
+        version: 14.1.2
       '@types/node':
         specifier: ^22.10.2
         version: 22.19.21

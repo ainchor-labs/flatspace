@@ -22,7 +22,8 @@ import "@flatspace/shared/auth";
 import type { FastifyPluginAsync } from "fastify";
 import { createReadStream, statSync } from "node:fs";
 import type { Readable } from "node:stream";
-import { driveFolders, files } from "@flatspace/shared/db";
+import { documents, driveFolders, files, thoughts } from "@flatspace/shared/db";
+import type { DriveAppItem } from "@flatspace/shared/types";
 import {
   deleteBlob,
   docxToHtml,
@@ -40,6 +41,44 @@ function parseFolderId(raw: string | undefined): number | null {
 
 function safeName(name: string): string {
   return name.replace(/[/\\?%*:|"<>]/g, "").replace(/\s+/g, " ").trim() || "file";
+}
+
+/** Display name for a note: its title, else its first non-empty line. */
+function noteName(title: string, content: string): string {
+  const t = title.trim();
+  if (t) return t;
+  const line = content
+    .split("\n")
+    .map((l) => l.replace(/^#+\s*/, "").trim())
+    .find(Boolean);
+  return line ? line.slice(0, 80) : "Untitled note";
+}
+
+/**
+ * Cross-app items (Flatfile docs, Flatdeck decks, Flatthoughts notes) presented
+ * as read-only Drive entries. `starred` restricts to starred docs/decks (notes
+ * have no starred state, so they're omitted from the starred view).
+ */
+function appItemsFor(userId: number, opts: { starred?: boolean } = {}): DriveAppItem[] {
+  const items: DriveAppItem[] = [];
+  for (const kind of ["flatfile", "flatdeck"] as const) {
+    for (const d of documents.listForUser(userId, kind, opts.starred ? { starred: true } : {})) {
+      items.push({ kind, id: d.id, name: d.title || "Untitled", starred: d.starred, tags: d.tags, updatedAt: d.updatedAt });
+    }
+  }
+  if (!opts.starred) {
+    for (const t of thoughts.listForUser(userId)) {
+      items.push({
+        kind: "flatthought",
+        id: t.id,
+        name: noteName(t.title, t.content),
+        starred: false,
+        tags: t.tags,
+        updatedAt: t.updatedAt,
+      });
+    }
+  }
+  return items;
 }
 
 function isDocx(mime: string, name: string): boolean {
@@ -64,6 +103,7 @@ export const flatdriveRoutes: FastifyPluginAsync = async (app) => {
         breadcrumb: driveFolders.breadcrumb(fid, user.id),
         folders: driveFolders.listChildren(user.id, fid),
         files: files.listInFolder(user.id, fid),
+        appItems: [], // cross-app items only surface at the root, not inside folders
       };
     }
     return {
@@ -71,19 +111,23 @@ export const flatdriveRoutes: FastifyPluginAsync = async (app) => {
       breadcrumb: [],
       folders: driveFolders.listChildren(user.id, null),
       files: files.listInFolder(user.id, null),
+      appItems: appItemsFor(user.id),
     };
   });
 
   // Flat, cross-folder views (Recent / All / Starred) for the sidebar.
   app.get("/recent", async (request) => {
     const user = request.user!;
-    return files.recent(user.id);
+    const appItems = appItemsFor(user.id)
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, 24);
+    return { files: files.recent(user.id), appItems };
   });
 
   app.get("/all", async (request) => {
     const user = request.user!;
-    const { starred } = request.query as { starred?: string };
-    return files.listAll(user.id, { starred: starred === "true" });
+    const starred = (request.query as { starred?: string }).starred === "true";
+    return { files: files.listAll(user.id, { starred }), appItems: appItemsFor(user.id, { starred }) };
   });
 
   app.get("/search", async (request) => {

@@ -21,6 +21,7 @@ import { EditorContent, useEditor, type JSONContent } from "@tiptap/react";
 import {
   ArrowLeft,
   BookText,
+  FileCode2,
   FileDown,
   FileText,
   FileType2,
@@ -34,7 +35,8 @@ import {
 } from "lucide-react";
 import type { Document, DocumentSettings } from "@flatspace/shared/types";
 import { cn } from "@flatspace/shared/lib";
-import { Menu, MenuContent, MenuItem, MenuTrigger, TagPicker } from "@flatspace/shared/ui";
+import { MarkdownLineEditor, Menu, MenuContent, MenuItem, MenuTrigger, TagPicker } from "@flatspace/shared/ui";
+import { renderDocMarkdown } from "../../lib/markdown.ts";
 import { exportDocx, exportMarkdown, exportText } from "./export.ts";
 import { VersionHistory } from "./VersionHistory.tsx";
 import { MarkdownGuide } from "./MarkdownGuide.tsx";
@@ -51,6 +53,11 @@ import { ExportPreview } from "./ExportPreview.tsx";
 import { PasteDialog } from "./PasteDialog.tsx";
 import { DEFAULT_FONT, DEFAULT_SIZE, marginById } from "./formatting.ts";
 import { TABLE_PICKER_EVENT, type TablePickerDetail } from "./extensions/slash-items.ts";
+
+/** tiptap-markdown augments editor.storage but isn't in the core types. */
+interface MarkdownStorage {
+  markdown?: { getMarkdown(): string };
+}
 
 function parseContent(raw: string): JSONContent | string {
   if (!raw) return "";
@@ -114,6 +121,11 @@ function EditorSurface({
   const [exportMsg, setExportMsg] = useState<string | null>(null);
   const [tableAnchor, setTableAnchor] = useState<PickerAnchor | null>(null);
   const [contextMenu, setContextMenu] = useState<(MenuAnchor & { inTable: boolean }) | null>(null);
+  // Optional markdown mode: edit the raw markdown source (hybrid live preview)
+  // instead of the rich TipTap surface. Round-trips through tiptap-markdown, so
+  // rich-only constructs (tables, callouts, colors) are simplified on the way out.
+  const [mdMode, setMdMode] = useState(false);
+  const [mdText, setMdText] = useState("");
 
   // Reflect the document title in the browser tab.
   useEffect(() => {
@@ -148,6 +160,28 @@ function EditorSurface({
         save({ settings: next });
         return next;
       });
+    },
+    [save],
+  );
+
+  const enterMarkdownMode = useCallback(() => {
+    if (!editor) return;
+    const storage = editor.storage as MarkdownStorage;
+    setMdText(storage.markdown?.getMarkdown() ?? editor.getText());
+    setMdMode(true);
+  }, [editor]);
+
+  const exitMarkdownMode = useCallback(() => {
+    // Parse the edited markdown back into the rich doc; this fires onUpdate,
+    // which persists the canonical TipTap JSON via autosave.
+    editor?.commands.setContent(parseContent(mdText));
+    setMdMode(false);
+  }, [editor, mdText]);
+
+  const onMdChange = useCallback(
+    (text: string) => {
+      setMdText(text);
+      save({ content: text }); // store raw markdown; re-parsed to JSON on exit
     },
     [save],
   );
@@ -285,6 +319,18 @@ function EditorSurface({
           }
         />
         <DocFormatPopover settings={settings} onChange={updateSettings} />
+        <button
+          onClick={() => (mdMode ? exitMarkdownMode() : enterMarkdownMode())}
+          aria-label="Toggle markdown source mode"
+          aria-pressed={mdMode}
+          title="Edit raw markdown (line-by-line live preview)"
+          className={cn(
+            "flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5",
+            mdMode ? "bg-accent text-foreground" : "text-muted-foreground",
+          )}
+        >
+          <FileCode2 /> <span className="hidden sm:inline">MD</span>
+        </button>
         <Menu>
           <MenuTrigger>
             <span className="flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5">
@@ -319,11 +365,25 @@ function EditorSurface({
           <div className="h-full w-60">{editor && <OutlinePanel editor={editor} />}</div>
         </aside>
 
-        <div className="relative min-w-0 flex-1 overflow-y-auto" onContextMenu={onContextMenu}>
-          {editor && showFind && <FindReplace editor={editor} onClose={() => setShowFind(false)} />}
-          {editor && <BubbleToolbar editor={editor} />}
+        <div
+          className="relative min-w-0 flex-1 overflow-y-auto"
+          onContextMenu={mdMode ? undefined : onContextMenu}
+        >
+          {editor && showFind && !mdMode && <FindReplace editor={editor} onClose={() => setShowFind(false)} />}
+          {editor && !mdMode && <BubbleToolbar editor={editor} />}
           <div className="mx-auto" style={surfaceStyle}>
-            <EditorContent editor={editor} />
+            {mdMode ? (
+              <MarkdownLineEditor
+                value={mdText}
+                onChange={onMdChange}
+                render={renderDocMarkdown}
+                proseClassName="ff-prose"
+                placeholder="Write markdown…"
+                className="min-h-[60vh]"
+              />
+            ) : (
+              <EditorContent editor={editor} />
+            )}
           </div>
         </div>
       </div>

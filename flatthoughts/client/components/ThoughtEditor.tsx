@@ -72,6 +72,7 @@ function EditorSurface({
       onContentChange={onContentChange}
       onBack={onBack}
       backLabel="Back to Flatthoughts"
+      autoFocus={false}
       headerExtra={
         <TagPicker
           entityType="thought"
