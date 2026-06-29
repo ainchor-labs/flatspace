@@ -164,7 +164,7 @@ export function FlatthoughtsDashboard({
                     current={thought.tags}
                     align="end"
                     trigger={
-                      <span className="flex items-center rounded-md p-1 text-muted-foreground opacity-0 transition hover:bg-accent hover:text-foreground group-hover:opacity-100 [&_svg]:size-3.5">
+                      <span className="reveal-on-hover flex items-center rounded-md p-1 text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5">
                         <TagIcon />
                       </span>
                     }
@@ -173,7 +173,7 @@ export function FlatthoughtsDashboard({
                     {shortDate(thought.updatedAt)}
                   </span>
                 </div>
-                <Menu className="absolute right-1.5 top-1.5 opacity-0 transition group-hover:opacity-100">
+                <Menu className="reveal-on-hover absolute right-1.5 top-1.5">
                   <MenuTrigger>
                     <span className="flex size-7 items-center justify-center rounded-md bg-background/80 text-muted-foreground backdrop-blur hover:text-foreground [&_svg]:size-4">
                       <MoreVertical />

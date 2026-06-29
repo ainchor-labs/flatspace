@@ -28,6 +28,8 @@ import type { Extensions } from "@tiptap/core";
 import { Markdown } from "tiptap-markdown";
 import { common, createLowlight } from "lowlight";
 import { Callout } from "./Callout.ts";
+import { ListExit } from "./ListExit.ts";
+import { Spellcheck } from "./Spellcheck.ts";
 import { SlashCommand } from "./SlashCommand.ts";
 
 const lowlight = createLowlight(common);
@@ -59,6 +61,8 @@ export function buildExtensions(): Extensions {
     TableCell,
     CodeBlockLowlight.configure({ lowlight }),
     Callout,
+    ListExit,
+    Spellcheck,
     Placeholder.configure({
       placeholder: ({ node }) =>
         node.type.name === "heading" ? "Heading" : "Type '/' for commands…",

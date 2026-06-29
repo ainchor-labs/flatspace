@@ -12,6 +12,13 @@
   caret-color: hsl(var(--primary));
 }
 
+/* Misspelled words (custom spellchecker) — red wavy underline. */
+.ff-prose .ff-misspelled {
+  text-decoration: underline wavy hsl(0 84% 60%);
+  text-decoration-skip-ink: none;
+  text-underline-offset: 2px;
+}
+
 .ff-prose > * + * {
   margin-top: 0.85em;
 }

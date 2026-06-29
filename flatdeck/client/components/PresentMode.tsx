@@ -36,7 +36,11 @@ export function PresentMode({
   const [showNotes, setShowNotes] = useState(false);
 
   const clamp = useCallback((n: number) => Math.max(0, Math.min(slides.length - 1, n)), [slides.length]);
-  const next = useCallback(() => setIndex((i) => clamp(i + 1)), [clamp]);
+  // Advancing past the final slide exits the presentation (PowerPoint-style).
+  const next = useCallback(() => {
+    if (index >= slides.length - 1) onClose();
+    else setIndex(index + 1);
+  }, [index, slides.length, onClose]);
   const prev = useCallback(() => setIndex((i) => clamp(i - 1)), [clamp]);
 
   useEffect(() => {

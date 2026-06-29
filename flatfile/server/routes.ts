@@ -19,8 +19,9 @@
 
 import "@flatspace/shared/auth"; // pulls in FastifyRequest.user / app.authGuard augmentation
 import type { FastifyPluginAsync } from "fastify";
-import { documents, folders, versions } from "@flatspace/shared/db";
+import { dictionary, documents, folders, versions } from "@flatspace/shared/db";
 import { markdownToDocx, PandocMissingError } from "./export.ts";
+import { baseMisspelled, suggestions } from "./spellcheck.ts";
 
 const APP = "flatfile" as const;
 
@@ -37,6 +38,44 @@ const SNAPSHOT_THROTTLE_MIN = 10;
 export const flatfileRoutes: FastifyPluginAsync = async (app) => {
   // Guard every route in this tree.
   app.addHook("preHandler", app.authGuard);
+
+  // ---- Spell check + personal dictionary --------------------------------
+  // Check a batch of words; returns those misspelled per the base dictionary
+  // AND not in the user's personal dictionary.
+  app.post("/spellcheck", async (request) => {
+    const user = request.user!;
+    const { words } = (request.body ?? {}) as { words?: unknown };
+    if (!Array.isArray(words)) return { misspelled: [] };
+    const personal = new Set(dictionary.list(user.id));
+    const candidates = words.filter((w): w is string => typeof w === "string").slice(0, 5000);
+    const misspelled = baseMisspelled(candidates).filter((w) => !personal.has(w.toLowerCase()));
+    return { misspelled };
+  });
+
+  // Correction suggestions for a single misspelled word (right-click menu).
+  app.post("/spellcheck/suggest", async (request) => {
+    const { word } = (request.body ?? {}) as { word?: unknown };
+    if (typeof word !== "string") return { suggestions: [] };
+    return { suggestions: suggestions(word) };
+  });
+
+  app.get("/dictionary", async (request) => {
+    return dictionary.list(request.user!.id);
+  });
+
+  app.post("/dictionary", async (request, reply) => {
+    const { word } = (request.body ?? {}) as { word?: unknown };
+    if (typeof word !== "string" || !word.trim()) {
+      return reply.code(400).send({ error: "BadRequest", message: "word is required", statusCode: 400 });
+    }
+    return { word: dictionary.add(request.user!.id, word) };
+  });
+
+  app.delete("/dictionary/:word", async (request, reply) => {
+    const { word } = request.params as { word: string };
+    dictionary.remove(request.user!.id, decodeURIComponent(word));
+    return reply.code(204).send();
+  });
 
   app.get("/docs", async (request) => {
     const user = request.user!;

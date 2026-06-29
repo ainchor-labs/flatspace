@@ -9,7 +9,7 @@
  * selection.
  */
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Editor } from "@tiptap/react";
 import {
   ArrowDownToLine,
@@ -17,6 +17,7 @@ import {
   ArrowRightToLine,
   ArrowUpToLine,
   Bold,
+  BookPlus,
   ClipboardPaste,
   Code,
   Copy,
@@ -24,12 +25,14 @@ import {
   Italic,
   Link as LinkIcon,
   Scissors,
+  SpellCheck,
   Strikethrough,
   Trash2,
   Underline as UnderlineIcon,
 } from "lucide-react";
 import { cn } from "@flatspace/shared/lib";
 import { copySelection, cutSelection } from "./clipboard.ts";
+import { ignoreWord, misspelledWordAt, replaceWord, suggestFor } from "./extensions/Spellcheck.ts";
 
 export interface MenuAnchor {
   x: number;
@@ -95,6 +98,18 @@ export function EditorContextMenu({
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
+  // If the click landed on a misspelled word, offer corrections + add-to-dictionary.
+  const misspelled = useMemo(() => misspelledWordAt(editor, editor.state.selection.head), [editor]);
+  const [suggestions, setSuggestions] = useState<string[] | null>(null);
+  useEffect(() => {
+    if (!misspelled) return;
+    let alive = true;
+    void suggestFor(misspelled.word).then((s) => alive && setSuggestions(s));
+    return () => {
+      alive = false;
+    };
+  }, [misspelled]);
+
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose();
@@ -143,6 +158,31 @@ export function EditorContextMenu({
       style={{ position: "fixed", left, top, zIndex: 130 }}
       className="min-w-56 rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-2xl animate-scale-in"
     >
+      {misspelled && (
+        <>
+          <Label>Spelling</Label>
+          {suggestions === null ? (
+            <div className="px-2.5 py-1.5 text-sm text-muted-foreground">Checking…</div>
+          ) : suggestions.length === 0 ? (
+            <div className="px-2.5 py-1.5 text-sm text-muted-foreground">No suggestions</div>
+          ) : (
+            suggestions.map((s) => (
+              <Item
+                key={s}
+                icon={<SpellCheck />}
+                onClick={close(() => replaceWord(editor, misspelled.from, misspelled.to, s))}
+              >
+                {s}
+              </Item>
+            ))
+          )}
+          <Item icon={<BookPlus />} onClick={close(() => void ignoreWord(editor, misspelled.word))}>
+            Add to dictionary
+          </Item>
+          <Sep />
+        </>
+      )}
+
       <Item icon={<Scissors />} shortcut="Ctrl+X" disabled={!hasSelection} onClick={close(cut)}>
         Cut
       </Item>

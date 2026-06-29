@@ -1073,3 +1073,29 @@ export const taggings = {
     return tagsForEntity(entityType, entityId, db);
   },
 };
+
+/* ------------------------------------------------------------------ */
+/* Personal spelling dictionary                                        */
+/* ------------------------------------------------------------------ */
+
+export const dictionary = {
+  /** A user's personal words (lowercased), alphabetical. */
+  list(ownerId: number, db: DB = getDb()): string[] {
+    return (
+      db
+        .prepare("SELECT word FROM dictionary WHERE owner_id = ? ORDER BY word")
+        .all(ownerId) as { word: string }[]
+    ).map((r) => r.word);
+  },
+
+  /** Add a word (idempotent). Returns the normalised word stored. */
+  add(ownerId: number, word: string, db: DB = getDb()): string {
+    const w = word.trim().toLowerCase();
+    if (w) db.prepare("INSERT OR IGNORE INTO dictionary (owner_id, word) VALUES (?, ?)").run(ownerId, w);
+    return w;
+  },
+
+  remove(ownerId: number, word: string, db: DB = getDb()): void {
+    db.prepare("DELETE FROM dictionary WHERE owner_id = ? AND word = ?").run(ownerId, word.trim().toLowerCase());
+  },
+};

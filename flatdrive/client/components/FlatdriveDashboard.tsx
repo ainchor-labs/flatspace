@@ -675,7 +675,7 @@ export function FlatdriveDashboard({
                     current={file.tags}
                     align="end"
                     trigger={
-                      <span className="flex shrink-0 items-center rounded-md p-1 text-muted-foreground opacity-0 transition hover:bg-accent hover:text-foreground group-hover:opacity-100 [&_svg]:size-3.5">
+                      <span className="reveal-on-hover flex shrink-0 items-center rounded-md p-1 text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5">
                         <TagIcon />
                       </span>
                     }
@@ -768,7 +768,7 @@ function CardMenu({
   className?: string;
 }) {
   return (
-    <Menu className={cn(className, "opacity-0 transition group-hover:opacity-100")}>
+    <Menu className={cn(className, "reveal-on-hover")}>
       <MenuTrigger>
         <span className="flex size-7 items-center justify-center rounded-md bg-background/80 text-muted-foreground backdrop-blur hover:text-foreground [&_svg]:size-4">
           <MoreVertical />
@@ -846,7 +846,7 @@ function FileCard({ file, ...a }: { file: FileItem } & ItemActions) {
           current={file.tags}
           align="end"
           trigger={
-            <span className="flex items-center rounded-md p-1 text-muted-foreground opacity-0 transition hover:bg-accent hover:text-foreground group-hover:opacity-100 [&_svg]:size-3.5">
+            <span className="reveal-on-hover flex items-center rounded-md p-1 text-muted-foreground transition hover:bg-accent hover:text-foreground [&_svg]:size-3.5">
               <TagIcon />
             </span>
           }
@@ -863,7 +863,7 @@ function FileCard({ file, ...a }: { file: FileItem } & ItemActions) {
             "absolute right-10 top-1.5 flex size-7 items-center justify-center rounded-md bg-background/80 backdrop-blur transition [&_svg]:size-4",
             file.starred
               ? "text-amber-400 [&_svg]:fill-amber-400"
-              : "text-muted-foreground opacity-0 hover:text-foreground group-hover:opacity-100",
+              : "text-muted-foreground reveal-on-hover hover:text-foreground",
           )}
         >
           <Star />

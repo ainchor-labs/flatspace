@@ -140,7 +140,9 @@ function EditorSurface({
     extensions: buildExtensions(),
     content: parseContent(doc.content),
     editorProps: {
-      attributes: { class: "ff-prose", spellcheck: "true" },
+      // Native spellcheck is off — our Spellcheck extension draws the squiggles
+      // and a custom right-click menu (so the personal dictionary works).
+      attributes: { class: "ff-prose", spellcheck: "false" },
     },
     onUpdate: ({ editor }) => save({ content: JSON.stringify(editor.getJSON()) }),
   });

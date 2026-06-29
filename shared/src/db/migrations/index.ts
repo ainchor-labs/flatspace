@@ -223,4 +223,23 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    id: 8,
+    name: "user_dictionary",
+    up: (db) => {
+      // Per-user personal spelling dictionary: words the user has chosen to
+      // "ignore" / add so the editor's spellchecker stops flagging them. Words
+      // are stored lowercased; UNIQUE(owner_id, word) keeps adds idempotent.
+      db.exec(`
+        CREATE TABLE dictionary (
+          id         INTEGER PRIMARY KEY AUTOINCREMENT,
+          owner_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          word       TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          UNIQUE(owner_id, word)
+        );
+        CREATE INDEX idx_dictionary_owner ON dictionary(owner_id);
+      `);
+    },
+  },
 ];

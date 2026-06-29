@@ -111,7 +111,7 @@ function FolderRow({
         <Folder />
         <span className="truncate">{folder.name}</span>
       </button>
-      <Menu className="opacity-0 transition group-hover:opacity-100">
+      <Menu className="reveal-on-hover">
         <MenuTrigger>
           <span className="flex size-6 items-center justify-center rounded text-muted-foreground hover:text-foreground [&_svg]:size-3.5">
             <MoreVertical />

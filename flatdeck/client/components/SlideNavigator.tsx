@@ -46,7 +46,7 @@ export function SlideNavigator({
             >
               <SlideView slide={slide} theme={theme} />
             </button>
-            <Menu className="absolute right-1 top-1 opacity-0 transition group-hover:opacity-100">
+            <Menu className="reveal-on-hover absolute right-1 top-1">
               <MenuTrigger>
                 <span className="flex size-6 items-center justify-center rounded bg-background/80 text-muted-foreground hover:text-foreground [&_svg]:size-3.5">
                   <MoreVertical />

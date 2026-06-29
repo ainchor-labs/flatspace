@@ -22,3 +22,24 @@ body,
 #root {
   height: 100%;
 }
+
+/*
+ * Card controls (kebab menus, star/tag buttons) fade in on hover for pointer
+ * devices, but stay visible on touch devices — which have no hover, so an
+ * opacity-0 control would be invisible and untappable. Parent needs `.group`.
+ */
+.reveal-on-hover {
+  opacity: 1;
+}
+@media (hover: hover) {
+  .reveal-on-hover {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .group:hover .reveal-on-hover,
+  .reveal-on-hover:focus,
+  .reveal-on-hover:focus-within,
+  .reveal-on-hover:focus-visible {
+    opacity: 1;
+  }
+}

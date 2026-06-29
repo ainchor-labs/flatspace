@@ -19,6 +19,7 @@ export {
   tags,
   taggings,
   apiKeys,
+  dictionary,
   toPublicUser,
   type FileLocation,
 } from "./queries.ts";
